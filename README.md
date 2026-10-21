@@ -23,9 +23,25 @@ Android from a single codebase.
   passive-income calendar (bond coupons and dividends), five health ratios with traffic lights,
   and a what-if projection over 5, 10 and 20 years. No LLM, no network.
 - **Private by design.** All data stays on the device in SQLite. No account, no backend, no
-  analytics. Encrypted backups let you move to a new phone.
-- Simplified Chinese and English, multi-currency with a home currency and editable FX rates, and an
-  app lock with Face ID or fingerprint.
+  analytics. An app lock (Face ID, fingerprint or passcode) guards it, and passphrase-encrypted
+  backups let you move to a new phone.
+- Simplified Chinese and English, multi-currency with a home currency and editable FX rates.
+
+## Screenshots
+
+Taken from the web preview at iPhone size, with the built-in demo data (nothing real).
+
+| Home                                                                                                                     | Credit                                                                                                                         | Card detail                                                                                                                    |
+| ------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------ |
+| <img src="docs/screenshots/home.jpg" width="240" alt="Home: total owed, due this month, next due and what is coming up"> | <img src="docs/screenshots/credit.jpg" width="240" alt="Credit: total due this month, the card deck and the list by due date"> | <img src="docs/screenshots/detail.jpg" width="240" alt="Card detail: next payment with mark as paid, balance and utilization"> |
+
+| Best card, next 30 days                                                                                                                    | Wealth dashboard                                                                                   | Cash flow and trend                                                                                    |
+| ------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| <img src="docs/screenshots/optimizer.jpg" width="240" alt="30-day calendar of the best card per day and the cost of daily-interest loans"> | <img src="docs/screenshots/wealth.jpg" width="240" alt="Net worth and the next steps of the plan"> | <img src="docs/screenshots/dashboard.jpg" width="240" alt="Monthly cash flow and net worth over time"> |
+
+| Bonds                                                                                             | What-if projection                                                                                | 简体中文                                                                                     |
+| ------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| <img src="docs/screenshots/bonds.jpg" width="240" alt="Bonds with yield to maturity and coupons"> | <img src="docs/screenshots/plan.jpg" width="240" alt="Projected net worth in 5, 10 and 20 years"> | <img src="docs/screenshots/home-zh.jpg" width="240" alt="Home screen in Simplified Chinese"> |
 
 ## Status
 
@@ -36,7 +52,7 @@ Android from a single codebase.
 | 3     | Payment optimizer and "Best card to use today"                          | Done  |
 | 4     | Portfolio inputs: income, housing, insurance, bonds, stocks, risk       | Done  |
 | 5     | Portfolio planner engine, dashboard and charts                          | Done  |
-| 6     | Polish: animations, i18n pass, app lock, backup/export, screenshots     | Next  |
+| 6     | Polish: animations, i18n pass, app lock, backup/export, screenshots     | Done  |
 
 ## Run it
 
@@ -137,11 +153,28 @@ docs/
 
 ## Privacy and security
 
-- Data never leaves the phone unless you export a backup yourself.
-- No analytics, crash reporting or network calls.
-- Secrets (such as the app-lock setting) live in the OS keychain/keystore via `expo-secure-store`.
+- Data never leaves the phone unless you export a backup yourself. No analytics, crash reporting
+  or network calls of any kind.
+- **App lock** (Me → Security): Face ID, Touch ID or fingerprint, falling back to the device
+  passcode. It locks at launch and after the app has been in the background longer than the delay
+  you choose, and covers the screen in the app switcher. The setting lives in the OS
+  keychain/keystore via `expo-secure-store`, so it is never part of a backup.
+- **Backups** (Me → Backup and restore) are encrypted on the phone before you share them anywhere:
+  scrypt (N = 2¹⁶, r = 8, p = 1) derives a key from your passphrase and XChaCha20-Poly1305 encrypts
+  and authenticates every table plus your preferences. A wrong passphrase or a modified file is
+  rejected; restoring replaces everything in one transaction. Without the passphrase a backup
+  cannot be opened, so keep it safe. The format is documented in `src/lib/backup/crypto.ts`.
 - Never commit real financial data: `.gitignore` blocks local databases, backups, `.env` files
   and signing keys.
+
+## Notes and limits
+
+- Prices, FX rates and bond prices are typed in by hand; the app never goes online.
+- Bank holidays are flagged for mainland China (the published 2026 schedule, then fixed-date
+  holidays for other years until the next schedule is added) and the US (computed rules).
+- The planner's rules and thresholds are in `src/domain/portfolioPlanner.ts`, each covered by
+  tests. Return assumptions are long-run guesses, not forecasts.
+- Light theme only for now; colours go through theme tokens so a dark theme can follow.
 
 ## Design
 
