@@ -11,6 +11,7 @@
     "expo": "~58.0.16",
     "expo-constants": "~58.0.12",
     "expo-crypto": "~58.0.7",
+    "expo-dev-client": "~58.0.14",
     "expo-device": "~58.0.5",
     "expo-document-picker": "~58.0.4",
     "expo-file-system": "~58.0.10",
@@ -63,9 +64,10 @@
     "typescript": "~6.0.3"
   },
   "scripts": {
-    "start": "expo start",
-    "android": "expo start --android",
-    "ios": "expo start --ios",
+    "start": "expo start --go",
+    "start:dev": "expo start --dev-client",
+    "android": "expo start --go --android",
+    "ios": "expo start --go --ios",
     "lint": "expo lint",
     "typecheck": "tsc --noEmit",
     "test": "jest",

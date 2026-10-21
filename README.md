@@ -1,56 +1,129 @@
-# Welcome to your Expo app 👋
+# Finance
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+A local-first personal finance app for one person, built with Expo (React Native) for iOS and
+Android from a single codebase.
 
-## Get started
+> This is a planning tool, not licensed financial advice.
 
-1. Install dependencies
+## What it does
 
-   ```bash
-   npm install
-   ```
+- **Every credit product in one list.** Credit cards from any bank or country plus Chinese
+  consumer credit such as 花呗 (Huabei), 借呗 (Jiebei), 网商贷 (Wangshangdai), 京东白条 and
+  微粒贷, sorted by the next due date, with local reminders before each one.
+- **Best card to use today.** Ranks cards by interest-free days for a purchase made today, with a
+  30-day calendar. Loans that charge daily interest from day one (借呗, 网商贷) are never ranked
+  as "free float"; the app shows their real cost instead.
+- **Portfolio planner.** Income, credit debt, housing, insurance, cash, bonds and stocks feed a
+  transparent rules engine that proposes an ordered plan and a target allocation, with the
+  reasoning spelled out for every recommendation.
+- **Private by design.** All data stays on the device in SQLite. No account, no backend, no
+  analytics. Encrypted backups let you move to a new phone.
+- Simplified Chinese and English, multi-currency with a home currency and editable FX rates, and an
+  app lock with Face ID or fingerprint.
 
-2. Start the app
+## Status
 
-   ```bash
-   npx expo start
-   ```
+| Phase | Scope                                                                   | State |
+| ----- | ----------------------------------------------------------------------- | ----- |
+| 1     | Project setup, design research, design system, navigation shell         | Done  |
+| 2     | Credit products: data model, add/edit screens, countdown, notifications | Next  |
+| 3     | Payment optimizer and "Best card to use today"                          |       |
+| 4     | Portfolio inputs: income, housing, insurance, bonds, stocks, risk       |       |
+| 5     | Portfolio planner engine, dashboard and charts                          |       |
+| 6     | Polish: animations, i18n pass, app lock, backup/export, screenshots     |       |
 
-In the output, you'll find options to open the app in a
+## Run it
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **src/app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
+You need Node.js 20 or newer and npm. Then:
 
 ```bash
-npm run reset-project
+npm install
 ```
 
-This command will move the starter code to the **example** directory and create a blank **src/app** directory where you can start developing.
+### On your phone with Expo Go (quickest)
 
-### Other setup steps
+1. Install **Expo Go** from the App Store or Google Play. The store version supports Expo SDK 58,
+   which this project uses.
+2. Start the dev server:
 
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
+   ```bash
+   npm start
+   ```
 
-## Learn more
+3. Scan the QR code in the terminal: with the Camera app on iPhone, or from inside Expo Go on
+   Android. Your phone and computer need to be on the same Wi-Fi network; if they cannot see each
+   other, run `npm start -- --tunnel`.
 
-To learn more about developing your project with Expo, look at the following resources:
+Expo Go limits worth knowing:
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+- **Face ID does not work in Expo Go on iOS**, so the app lock falls back to your device passcode
+  there. Fingerprint unlock on Android works.
+- Notifications are local only, which is all this app uses, so reminders work in Expo Go.
 
-## Join the community
+### With a development build
 
-Join our community of developers creating universal apps.
+A development build is your own installable app with all native modules compiled in. Use it for
+Face ID on iOS, or once you want an app icon on your home screen that does not depend on Expo Go.
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+With EAS Build (no Xcode or Android Studio needed):
+
+```bash
+npx eas-cli@latest login
+npx eas-cli@latest init                      # links the project to your Expo account
+npx eas-cli@latest build --profile development --platform ios      # or android
+```
+
+Install the build on your phone from the link EAS gives you, then start the dev server for it:
+
+```bash
+npm run start:dev
+```
+
+Or build locally if you have Xcode or Android Studio installed:
+
+```bash
+npx expo run:ios
+npx expo run:android
+```
+
+## Scripts
+
+| Command             | What it does                          |
+| ------------------- | ------------------------------------- |
+| `npm start`         | Dev server for Expo Go                |
+| `npm run start:dev` | Dev server for a development build    |
+| `npm test`          | Jest unit tests                       |
+| `npm run lint`      | ESLint with Prettier formatting rules |
+| `npm run typecheck` | TypeScript in strict mode             |
+| `npm run check`     | All three of the above                |
+| `npm run format`    | Format everything with Prettier       |
+
+## Project layout
+
+```text
+src/
+  app/          Routes (expo-router). Every file is a screen; _layout files are navigators.
+  components/   Design-system components: Card, StatTile, ProgressRing, DueBadge,
+                AmountText, BottomSheet, EmptyState, TabBar, ...
+  design/       Tokens (colour, type, spacing, radius, shadow, motion), theme, motion helpers
+  domain/       Pure finance logic with unit tests (money formatting, due status, ...)
+  i18n/         English and Simplified Chinese strings, language detection
+  lib/          Platform helpers (haptics, date formatting)
+  state/        App-wide state (preferences)
+docs/
+  design.md     Mobbin research and the design system it led to
+```
+
+## Privacy and security
+
+- Data never leaves the phone unless you export a backup yourself.
+- No analytics, crash reporting or network calls.
+- Secrets (such as the app-lock setting) live in the OS keychain/keystore via `expo-secure-store`.
+- Never commit real financial data: `.gitignore` blocks local databases, backups, `.env` files
+  and signing keys.
+
+## Design
+
+See [docs/design.md](docs/design.md) for the reference apps studied on Mobbin, what was taken from
+each, and the resulting design system (colour tokens with contrast ratios, type scale, motion
+rules, accessibility).
