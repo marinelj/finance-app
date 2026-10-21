@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next';
-import type { StyleProp, TextStyle } from 'react-native';
+import { Text as RNText, type StyleProp, type TextStyle } from 'react-native';
 
 import { useMotion } from '@/design/motion';
 import { typography, type TypographyVariant } from '@/design/tokens';
@@ -77,9 +77,8 @@ export function AmountText({
           {parts.symbol}
           {parts.integer}
           {parts.fraction ? (
-            <Text variant={variant} tone={tone} style={fractionStyle}>
-              .{parts.fraction}
-            </Text>
+            // Plain nested text inherits the parent's colour, including one passed via `style`.
+            <RNText style={fractionStyle}>.{parts.fraction}</RNText>
           ) : null}
           {parts.suffix}
         </>

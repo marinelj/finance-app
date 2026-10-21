@@ -20,6 +20,8 @@ export type StatTileProps = {
   emoji?: string;
   tone?: AccentTone;
   status?: { tone: StatusTone; label: string };
+  /** Extra content under the caption, e.g. a DueBadge. */
+  footer?: ReactNode;
   onPress?: () => void;
   accessibilityLabel?: string;
   style?: StyleProp<ViewStyle>;
@@ -34,6 +36,7 @@ export function StatTile({
   emoji,
   tone = 'violet',
   status,
+  footer,
   onPress,
   accessibilityLabel,
   style,
@@ -65,6 +68,7 @@ export function StatTile({
           {caption}
         </Text>
       ) : null}
+      {footer}
     </Card>
   );
 }
