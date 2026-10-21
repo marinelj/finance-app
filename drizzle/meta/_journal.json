@@ -15,6 +15,13 @@
       "when": 1792602930411,
       "tag": "0001_portfolio_inputs",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1792603915182,
+      "tag": "0002_net_worth_snapshots",
+      "breakpoints": true
     }
   ]
 }

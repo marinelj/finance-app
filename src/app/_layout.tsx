@@ -13,6 +13,7 @@ import { NotificationResponder, ReminderSync } from '@/features/credit/ReminderS
 import { configureNotifications, notificationsSupported } from '@/lib/notifications';
 import { CreditDataProvider } from '@/state/creditData';
 import { DatabaseGate } from '@/state/DatabaseGate';
+import { PlanProvider } from '@/state/plan';
 import { PreferencesProvider } from '@/state/preferences';
 import { ToastProvider } from '@/state/toast';
 import { WealthDataProvider } from '@/state/wealthData';
@@ -55,6 +56,7 @@ function Navigation() {
         <Stack.Screen name="product/[id]/index" options={{ title: '' }} />
         <Stack.Screen name="product/[id]/edit" options={{ presentation: 'modal' }} />
         <Stack.Screen name="optimizer" options={{ title: t('optimizer.title') }} />
+        <Stack.Screen name="plan" options={{ title: t('plan.title') }} />
         <Stack.Screen name="wealth/[kind]/index" options={{ title: '' }} />
         <Stack.Screen name="wealth/[kind]/edit" options={{ presentation: 'modal' }} />
         <Stack.Screen name="wealth/risk" options={{ presentation: 'modal' }} />
@@ -77,9 +79,11 @@ export default function RootLayout() {
             <PreferencesProvider>
               <CreditDataProvider>
                 <WealthDataProvider>
-                  <ToastProvider>
-                    <Navigation />
-                  </ToastProvider>
+                  <PlanProvider>
+                    <ToastProvider>
+                      <Navigation />
+                    </ToastProvider>
+                  </PlanProvider>
                 </WealthDataProvider>
               </CreditDataProvider>
             </PreferencesProvider>

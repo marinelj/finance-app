@@ -17,9 +17,12 @@ import {
   type HousingRow,
   type IncomeRow,
   type InsuranceRow,
+  type NetWorthSnapshotRow,
   type StockRow,
 } from '@/db/schema';
+import { readPlannerSettings, readSnapshots } from '@/db/planner';
 import { readRiskProfile, type StoredRiskProfile } from '@/db/wealth';
+import type { PlannerSettings } from '@/domain/portfolioPlanner';
 import { isCompleteAnswers } from '@/domain/riskProfile';
 import type { WealthKind } from '@/domain/wealthForms';
 
@@ -32,6 +35,9 @@ export type WealthData = {
   bonds: BondRow[];
   stocks: StockRow[];
   risk: StoredRiskProfile | null;
+  plannerSettings: PlannerSettings;
+  /** Oldest first. */
+  snapshots: NetWorthSnapshotRow[];
 };
 
 export type WealthRow =
@@ -66,6 +72,8 @@ export function WealthDataProvider({ children }: { children: ReactNode }) {
     bonds: useLiveRows(['bond_holdings'], readBonds),
     stocks: useLiveRows(['stock_holdings'], readStocks),
     risk: useLiveRows(['settings'], readRisk),
+    plannerSettings: useLiveRows(['settings'], readPlannerSettings),
+    snapshots: useLiveRows(['net_worth_snapshots'], readSnapshots),
   };
   return <WealthDataContext.Provider value={value}>{children}</WealthDataContext.Provider>;
 }

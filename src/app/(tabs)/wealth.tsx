@@ -5,6 +5,7 @@ import { StyleSheet, View } from 'react-native';
 import { AmountText } from '@/components/AmountText';
 import { Appear } from '@/components/Appear';
 import { Card } from '@/components/Card';
+import { EmptyState } from '@/components/EmptyState';
 import { Icon } from '@/components/Icon';
 import { IconChip } from '@/components/IconChip';
 import { PressableScale } from '@/components/PressableScale';
@@ -14,39 +15,34 @@ import { Text } from '@/components/Text';
 import { useStyles, useTheme } from '@/design/theme';
 import type { AccentTone, Theme } from '@/design/tokens';
 import type { CurrencyCode } from '@/domain/money';
-import { summarizeInputs } from '@/domain/portfolio';
 import { scoreRisk } from '@/domain/riskProfile';
 import { WEALTH_KINDS, type WealthKind } from '@/domain/wealthForms';
+import { AllocationCard } from '@/features/plan/AllocationCard';
+import { CashFlowCard } from '@/features/plan/CashFlowCard';
+import { HealthCard } from '@/features/plan/HealthCard';
+import { NetWorthTrend } from '@/features/plan/NetWorthTrend';
+import { NextSteps } from '@/features/plan/NextSteps';
+import { PassiveIncomeCard } from '@/features/plan/PassiveIncomeCard';
 import { SECTION_META, tKey } from '@/features/wealth/meta';
 import { useCreditData } from '@/state/creditData';
+import { usePlan } from '@/state/plan';
 import { usePreferences } from '@/state/preferences';
 import { rowsOf, useWealthData } from '@/state/wealthData';
 
+/** The portfolio dashboard: net worth, the plan, health ratios, charts, then every input. */
 export default function WealthScreen() {
   const { t } = useTranslation();
   const router = useRouter();
   const { colors } = useTheme();
   const styles = useStyles(makeStyles);
   const data = useWealthData();
-  const { summary: credit, today, fx } = useCreditData();
+  const plan = usePlan();
+  const { summary: credit, fx } = useCreditData();
   const { prefs } = usePreferences();
   const home = prefs.homeCurrency;
-  const overview = summarizeInputs(
-    {
-      incomes: data.incomes,
-      housing: data.housing,
-      insurance: data.insurance,
-      expenses: data.expenses,
-      cash: data.cash,
-      bonds: data.bonds,
-      stocks: data.stocks,
-    },
-    today,
-    home,
-    fx
-  );
-  const owned = overview.cash + overview.bonds + overview.stocks + overview.property;
   const risk = data.risk ? scoreRisk(data.risk.answers) : null;
+  const { overview, netWorth } = plan;
+  const hasInputs = WEALTH_KINDS.some((kind) => rowsOf(data, kind).length > 0);
 
   const sectionValue: Record<WealthKind, { amount: number; monthly: boolean }> = {
     income: { amount: overview.income, monthly: true },
@@ -58,32 +54,95 @@ export default function WealthScreen() {
     stock: { amount: overview.stocks, monthly: false },
   };
 
+  let block = 0;
   return (
     <Screen withTabBar title={t('wealth.title')}>
-      <Appear index={0}>
+      <Appear index={block++}>
         <Card variant="gradient" padding="xxl" style={styles.hero}>
           <Text variant="callout" tone="onPrimary" style={styles.soft}>
-            {t('wealth.ownTitle')}
+            {t('plan.netWorth')}
           </Text>
-          <AmountText value={owned} currency={home} variant="hero" tone="onPrimary" animate />
+          <AmountText
+            value={netWorth.netWorth}
+            currency={home}
+            variant="hero"
+            tone="onPrimary"
+            animate
+          />
           <View style={styles.heroStats}>
-            <HeroStat
-              label={t('wealth.sections.income')}
-              value={overview.income}
-              currency={home}
-              suffix={t('wealth.monthShort')}
-            />
-            <HeroStat
-              label={t('wealth.passiveIncome')}
-              value={(overview.coupons + overview.dividends) / 12}
-              currency={home}
-              suffix={t('wealth.monthShort')}
-            />
+            <HeroStat label={t('plan.assets')} value={netWorth.assets} currency={home} />
+            <HeroStat label={t('plan.liabilities')} value={netWorth.liabilities} currency={home} />
           </View>
         </Card>
       </Appear>
 
-      <Appear index={1}>
+      {hasInputs ? (
+        <>
+          <Appear index={block++}>
+            <Card style={styles.section}>
+              <SectionHeader
+                title={t('plan.nextSteps')}
+                action={{ label: t('plan.seePlan'), onPress: () => router.push('/plan') }}
+              />
+              <NextSteps actions={plan.actions} limit={3} />
+            </Card>
+          </Appear>
+
+          <Appear index={block++}>
+            <Card style={styles.section}>
+              <SectionHeader title={t('plan.health')} />
+              <HealthCard
+                ratios={plan.ratios}
+                emergencyTargetMonths={plan.settings.emergencyMonths}
+              />
+            </Card>
+          </Appear>
+
+          <Appear index={block++}>
+            <Card style={styles.section}>
+              <SectionHeader title={t('plan.cashFlow')} />
+              <CashFlowCard cashFlow={plan.cashFlow} />
+            </Card>
+          </Appear>
+
+          <Appear index={block++}>
+            <Card style={styles.section}>
+              <SectionHeader title={t('plan.trend')} />
+              <NetWorthTrend snapshots={data.snapshots} fx={fx} />
+            </Card>
+          </Appear>
+
+          <Appear index={block++}>
+            <Card style={styles.section}>
+              <SectionHeader title={t('plan.passive')} />
+              <PassiveIncomeCard passive={plan.passive} />
+            </Card>
+          </Appear>
+
+          <Appear index={block++}>
+            <Card style={styles.section}>
+              <SectionHeader
+                title={t('plan.allocation')}
+                action={{ label: t('plan.seePlan'), onPress: () => router.push('/plan') }}
+              />
+              <AllocationCard allocation={plan.allocation} />
+            </Card>
+          </Appear>
+        </>
+      ) : (
+        <Appear index={block++}>
+          <Card>
+            <EmptyState
+              emoji="🌱"
+              tone="mint"
+              title={t('plan.emptyTitle')}
+              message={t('plan.emptyMessage')}
+            />
+          </Card>
+        </Appear>
+      )}
+
+      <Appear index={block++}>
         <PressableScale
           onPress={() => router.push('/wealth/risk')}
           haptic="light"
@@ -114,7 +173,7 @@ export default function WealthScreen() {
         </PressableScale>
       </Appear>
 
-      <Appear index={2}>
+      <Appear index={block++}>
         <Card style={styles.list}>
           <SectionHeader title={t('wealth.inputsTitle')} />
           <Text variant="caption" tone="muted">
@@ -149,6 +208,13 @@ export default function WealthScreen() {
           />
         </Card>
       </Appear>
+
+      <View style={styles.note}>
+        <Icon name="information-circle-outline" size={16} color={colors.textMuted} />
+        <Text variant="caption" tone="muted" style={styles.flex}>
+          {t('plan.disclaimer')}
+        </Text>
+      </View>
     </Screen>
   );
 }
@@ -157,12 +223,10 @@ function HeroStat({
   label,
   value,
   currency,
-  suffix,
 }: {
   label: string;
   value: number;
   currency: CurrencyCode;
-  suffix: string;
 }) {
   const styles = useStyles(makeStyles);
   return (
@@ -170,12 +234,7 @@ function HeroStat({
       <Text variant="caption" tone="onPrimary" style={styles.soft}>
         {label}
       </Text>
-      <View style={styles.inline}>
-        <AmountText value={value} currency={currency} variant="headline" tone="onPrimary" />
-        <Text variant="caption" tone="onPrimary" style={styles.soft}>
-          {suffix}
-        </Text>
-      </View>
+      <AmountText value={value} currency={currency} variant="headline" tone="onPrimary" compact />
     </View>
   );
 }
@@ -247,10 +306,16 @@ const makeStyles = ({ space }: Theme) =>
       borderTopWidth: StyleSheet.hairlineWidth,
       borderTopColor: 'rgba(255, 255, 255, 0.35)',
     },
-    inline: { flexDirection: 'row', alignItems: 'baseline', gap: space.xs },
+    section: { gap: space.md },
     flex: { flex: 1, gap: 2 },
     riskCard: { flexDirection: 'row', alignItems: 'center', gap: space.md },
     list: { gap: space.sm },
     row: { flexDirection: 'row', alignItems: 'center', gap: space.md, minHeight: 60 },
     amount: { alignItems: 'flex-end' },
+    note: {
+      flexDirection: 'row',
+      gap: space.sm,
+      alignItems: 'flex-start',
+      paddingHorizontal: space.xs,
+    },
   });

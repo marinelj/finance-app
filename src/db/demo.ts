@@ -1,6 +1,7 @@
 import { eq, inArray } from 'drizzle-orm';
 
-import { addDays, addMonths, type LocalDate } from '@/domain/dates';
+import { addDays, addMonths, monthKey, type LocalDate } from '@/domain/dates';
+import { buildPlan, debtsFromCredit } from '@/domain/portfolioPlanner';
 import {
   defaultWealthValues,
   toWealthRecord,
@@ -15,7 +16,21 @@ import { getDb } from './client';
 import { saveProduct } from './credit';
 import { newId, nowIso } from './ids';
 import { readSetting, writeSetting } from './settings';
-import { creditProducts, installments, payments } from './schema';
+import { fxTableFromRows } from './fx';
+import {
+  bondHoldings,
+  cashAccounts,
+  creditProducts,
+  expenses,
+  fxRates,
+  housing,
+  incomes,
+  installments,
+  insurancePolicies,
+  netWorthSnapshots,
+  payments,
+  stockHoldings,
+} from './schema';
 import { deleteWealthItem, saveWealthItem } from './wealth';
 
 /**
@@ -28,6 +43,7 @@ const DEMO_KEY = 'demo';
 type DemoState = {
   productIds: string[];
   wealth?: { kind: WealthKind; id: string }[];
+  snapshotMonths?: string[];
 };
 
 function product(
@@ -306,10 +322,13 @@ export function loadDemoData(today: LocalDate, home: CurrencyCode): void {
     id: saveWealthItem(kind, null, toWealthRecord(kind, values)),
   }));
 
+  const snapshotMonths = addDemoHistory(today, home);
+
   const previous = readSetting<DemoState>(DEMO_KEY);
   writeSetting(DEMO_KEY, {
     productIds: [...(previous?.productIds ?? []), ...ids],
     wealth: [...(previous?.wealth ?? []), ...wealth],
+    snapshotMonths: [...(previous?.snapshotMonths ?? []), ...snapshotMonths],
   } satisfies DemoState);
 }
 
@@ -317,6 +336,10 @@ export function removeDemoData(): void {
   const state = readSetting<DemoState>(DEMO_KEY);
   const ids = state?.productIds ?? [];
   for (const { kind, id } of state?.wealth ?? []) deleteWealthItem(kind, id);
+  const months = state?.snapshotMonths ?? [];
+  if (months.length > 0) {
+    getDb().delete(netWorthSnapshots).where(inArray(netWorthSnapshots.month, months)).run();
+  }
   if (ids.length > 0) {
     getDb().transaction((tx) => {
       tx.delete(payments).where(inArray(payments.productId, ids)).run();
@@ -324,5 +347,58 @@ export function removeDemoData(): void {
       tx.delete(creditProducts).where(inArray(creditProducts.id, ids)).run();
     });
   }
-  writeSetting(DEMO_KEY, { productIds: [], wealth: [] } satisfies DemoState);
+  writeSetting(DEMO_KEY, { productIds: [], wealth: [], snapshotMonths: [] } satisfies DemoState);
+}
+
+/**
+ * Nine months of made-up net-worth history ending at today's figure, so the trend chart has
+ * something to show. Months that already have a real snapshot are left alone.
+ */
+function addDemoHistory(today: LocalDate, home: CurrencyCode): string[] {
+  const db = getDb();
+  const fx = fxTableFromRows(db.select().from(fxRates).all());
+  const plan = buildPlan({
+    today,
+    home,
+    fx,
+    inputs: {
+      incomes: db.select().from(incomes).all(),
+      housing: db.select().from(housing).all(),
+      insurance: db.select().from(insurancePolicies).all(),
+      expenses: db.select().from(expenses).all(),
+      cash: db.select().from(cashAccounts).all(),
+      bonds: db.select().from(bondHoldings).all(),
+      stocks: db.select().from(stockHoldings).all(),
+    },
+    debts: debtsFromCredit(
+      db.select().from(creditProducts).all(),
+      db.select().from(installments).all(),
+      today,
+      home,
+      fx
+    ),
+    risk: null,
+  });
+  const { netWorth, liabilities } = plan.netWorth;
+  const firstOfMonth = `${today.slice(0, 7)}-01`;
+  const added: string[] = [];
+  for (let k = 9; k >= 1; k--) {
+    const month = monthKey(addMonths(firstOfMonth, -k));
+    const pastLiabilities = liabilities * (1 + 0.004 * k);
+    const pastNetWorth = netWorth * (1 - 0.012 * k + 0.004 * Math.sin(k * 1.7));
+    const result = db
+      .insert(netWorthSnapshots)
+      .values({
+        month,
+        assets: pastNetWorth + pastLiabilities,
+        liabilities: pastLiabilities,
+        netWorth: pastNetWorth,
+        currency: home,
+        updatedAt: nowIso(),
+      })
+      .onConflictDoNothing()
+      .run();
+    if (result.changes > 0) added.push(month);
+  }
+  return added;
 }

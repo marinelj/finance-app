@@ -250,6 +250,16 @@ export const stockHoldings = sqliteTable('stock_holdings', {
   ...timestamps,
 });
 
+/** One row per calendar month: the latest net worth seen that month, in `currency`. */
+export const netWorthSnapshots = sqliteTable('net_worth_snapshots', {
+  month: text('month').primaryKey(),
+  assets: real('assets').notNull(),
+  liabilities: real('liabilities').notNull(),
+  netWorth: real('net_worth').notNull(),
+  currency: currency(),
+  updatedAt: text('updated_at').notNull(),
+});
+
 export type SettingRow = typeof settings.$inferSelect;
 export type FxRateRow = typeof fxRates.$inferSelect;
 export type CustomProductType = typeof customProductTypes.$inferSelect;
@@ -264,3 +274,4 @@ export type ExpenseRow = typeof expenses.$inferSelect;
 export type CashRow = typeof cashAccounts.$inferSelect;
 export type BondRow = typeof bondHoldings.$inferSelect;
 export type StockRow = typeof stockHoldings.$inferSelect;
+export type NetWorthSnapshotRow = typeof netWorthSnapshots.$inferSelect;
