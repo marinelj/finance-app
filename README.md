@@ -16,8 +16,12 @@ Android from a single codebase.
   interest from day one (借呗, 网商贷) are never ranked as "free float"; the app shows their real
   cost instead and lists them highest rate first, the order to repay them in.
 - **Portfolio planner.** Income, credit debt, housing, insurance, cash, bonds and stocks feed a
-  transparent rules engine that proposes an ordered plan and a target allocation, with the
-  reasoning spelled out for every recommendation.
+  transparent rules engine (`src/domain/portfolioPlanner.ts`) that proposes an ordered plan:
+  pay off debt above 6% APR, build a 6-month emergency fund, check insurance against income,
+  then invest the surplus by your risk profile, with rebalancing. Every step spells out the
+  figures behind it. The dashboard adds net worth and its monthly trend, cash flow, a 12-month
+  passive-income calendar (bond coupons and dividends), five health ratios with traffic lights,
+  and a what-if projection over 5, 10 and 20 years. No LLM, no network.
 - **Private by design.** All data stays on the device in SQLite. No account, no backend, no
   analytics. Encrypted backups let you move to a new phone.
 - Simplified Chinese and English, multi-currency with a home currency and editable FX rates, and an
@@ -31,8 +35,8 @@ Android from a single codebase.
 | 2     | Credit products: data model, add/edit screens, countdown, notifications | Done  |
 | 3     | Payment optimizer and "Best card to use today"                          | Done  |
 | 4     | Portfolio inputs: income, housing, insurance, bonds, stocks, risk       | Done  |
-| 5     | Portfolio planner engine, dashboard and charts                          | Next  |
-| 6     | Polish: animations, i18n pass, app lock, backup/export, screenshots     |       |
+| 5     | Portfolio planner engine, dashboard and charts                          | Done  |
+| 6     | Polish: animations, i18n pass, app lock, backup/export, screenshots     | Next  |
 
 ## Run it
 
@@ -118,9 +122,10 @@ src/
   design/       Tokens (colour, type, spacing, radius, shadow, motion), theme, motion helpers
   domain/       Pure finance logic with unit tests: dates, billing cycles, loans, payments,
                 payment optimizer, holidays, bonds (coupons, YTM), stocks, cash flow, risk
-                profile, FX, money formatting, form validation
+                profile, portfolio planner, FX, money formatting, form validation
   features/     Feature UI built from the components: credit (card art, card deck, product
-                form, payment sheet, reminders), optimizer, wealth (generic input form)
+                form, payment sheet, reminders), optimizer, wealth (generic input form),
+                plan (dashboard cards); charts live in components/charts
   hooks/        useToday, useForm, useCountUp
   i18n/         English and Simplified Chinese strings, language detection
   lib/          Platform helpers (haptics, notifications, date formatting, dialogs)
