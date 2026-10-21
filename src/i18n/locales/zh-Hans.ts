@@ -1,0 +1,81 @@
+import type { Translation } from './en';
+
+const zhHans: Translation = {
+  common: {
+    appName: '财务',
+    save: '保存',
+    cancel: '取消',
+    close: '关闭',
+    done: '完成',
+    edit: '编辑',
+    delete: '删除',
+    add: '添加',
+    continue: '继续',
+    back: '返回',
+    seeAll: '查看全部',
+  },
+  tabs: {
+    home: '首页',
+    credit: '信用',
+    wealth: '财富',
+    settings: '我的',
+  },
+  greeting: {
+    morning: '早上好',
+    afternoon: '下午好',
+    evening: '晚上好',
+  },
+  home: {
+    totalOwed: '总欠款',
+    noProducts: '还没有信用卡或贷款',
+    dueThisMonth: '本月应还',
+    nextDue: '下一笔还款',
+    nothingDue: '暂无待还',
+    bestCardToday: '今天刷哪张卡最划算',
+    bestCardEmpty: '添加信用卡后，这里会告诉你哪张卡的免息期最长。',
+    emptyTitle: '一起理清你的钱',
+    emptyMessage: '先添加信用卡和贷款，再补充收入和投资。所有数据只保存在这台手机上。',
+    hideAmounts: '隐藏金额',
+    showAmounts: '显示金额',
+  },
+  credit: {
+    title: '信用',
+    emptyTitle: '还没有信用卡或贷款',
+    emptyMessage: '信用卡、花呗、借呗、网商贷等信用产品都会显示在这里，按还款日先后排序。',
+  },
+  wealth: {
+    title: '财富',
+    emptyTitle: '你的完整财务画像',
+    emptyMessage: '收入、住房、保险、债券和股票会汇总在这里，生成你的理财计划。',
+  },
+  settings: {
+    title: '我的',
+    preferences: '偏好设置',
+    language: '语言',
+    languageSystem: '跟随系统',
+    homeCurrency: '本位币',
+    hideAmounts: '隐藏金额',
+    hideAmountsHint: '开启后所有金额都会被遮盖',
+    haptics: '触感反馈',
+    about: '关于',
+    designSystem: '设计系统',
+    designSystemHint: '应用里用到的颜色、字体和组件',
+    privacyNote: '所有数据只保存在本机：无需账号，不上云，不做统计。',
+    disclaimer: '本应用是规划工具，不构成持牌投资建议。',
+    version: '版本 {{version}}',
+  },
+  due: {
+    overdue_one: '已逾期 {{count}} 天',
+    overdue_other: '已逾期 {{count}} 天',
+    today: '今天到期',
+    daysLeft_one: '还剩 {{count}} 天',
+    daysLeft_other: '还剩 {{count}} 天',
+  },
+  a11y: {
+    amountHidden: '金额已隐藏',
+    percent: '百分之{{percent}}',
+    tabPosition: '{{label}}，第 {{index}} 个标签，共 {{count}} 个',
+  },
+};
+
+export default zhHans;
