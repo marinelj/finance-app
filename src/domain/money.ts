@@ -66,6 +66,8 @@ export type MoneyFormatOptions = {
   /** `auto` shows "-" only; `always` also shows "+" for positive amounts. */
   sign?: 'auto' | 'always' | 'never';
   symbol?: boolean;
+  /** Fewer decimals than the currency's own, e.g. 0 for axis ticks ("$400"). */
+  maxDecimals?: number;
 };
 
 export type MoneyParts = {
@@ -95,12 +97,12 @@ export function formatMoneyParts(
   currency: CurrencyCode,
   options: MoneyFormatOptions = {}
 ): MoneyParts {
-  const { locale = 'en', compact = false, sign = 'auto', symbol = true } = options;
+  const { locale = 'en', compact = false, sign = 'auto', symbol = true, maxDecimals } = options;
   const info = CURRENCIES[currency];
   const safe = Number.isFinite(amount) ? amount : 0;
 
   let magnitude = Math.abs(safe);
-  let decimals = info.decimals;
+  let decimals = maxDecimals != null ? Math.min(info.decimals, maxDecimals) : info.decimals;
   let suffix = '';
   let trim = false;
   if (compact) {

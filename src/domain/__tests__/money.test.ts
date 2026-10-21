@@ -85,3 +85,12 @@ describe('isCurrencyCode', () => {
     expect(isCurrencyCode('XYZ')).toBe(false);
   });
 });
+
+describe('maxDecimals', () => {
+  it('drops decimals for axis ticks, keeping compact units', () => {
+    expect(formatMoney(400, 'USD', { maxDecimals: 0 })).toBe('$400');
+    expect(formatMoney(400, 'USD', { maxDecimals: 0, compact: true })).toBe('$400');
+    expect(formatMoney(420000, 'USD', { maxDecimals: 0, compact: true })).toBe('$420K');
+    expect(formatMoney(1250, 'JPY', { maxDecimals: 2 })).toBe('JP¥1,250');
+  });
+});
