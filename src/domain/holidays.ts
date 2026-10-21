@@ -13,25 +13,27 @@ import type { CurrencyCode } from './money';
 
 export type HolidayRegion = 'cn' | 'us';
 
-export type HolidayKey =
-  | 'cn.newYear'
-  | 'cn.springFestival'
-  | 'cn.qingming'
-  | 'cn.labour'
-  | 'cn.dragonBoat'
-  | 'cn.midAutumn'
-  | 'cn.nationalDay'
-  | 'us.newYear'
-  | 'us.mlk'
-  | 'us.presidents'
-  | 'us.memorial'
-  | 'us.juneteenth'
-  | 'us.independence'
-  | 'us.labor'
-  | 'us.columbus'
-  | 'us.veterans'
-  | 'us.thanksgiving'
-  | 'us.christmas';
+export const HOLIDAY_KEYS = [
+  'cn.newYear',
+  'cn.springFestival',
+  'cn.qingming',
+  'cn.labour',
+  'cn.dragonBoat',
+  'cn.midAutumn',
+  'cn.nationalDay',
+  'us.newYear',
+  'us.mlk',
+  'us.presidents',
+  'us.memorial',
+  'us.juneteenth',
+  'us.independence',
+  'us.labor',
+  'us.columbus',
+  'us.veterans',
+  'us.thanksgiving',
+  'us.christmas',
+] as const;
+export type HolidayKey = (typeof HOLIDAY_KEYS)[number];
 
 type CnYear = {
   holidays: [HolidayKey, LocalDate, LocalDate][];
