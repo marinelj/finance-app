@@ -30,8 +30,8 @@ Android from a single codebase.
 | 1     | Project setup, design research, design system, navigation shell         | Done  |
 | 2     | Credit products: data model, add/edit screens, countdown, notifications | Done  |
 | 3     | Payment optimizer and "Best card to use today"                          | Done  |
-| 4     | Portfolio inputs: income, housing, insurance, bonds, stocks, risk       | Next  |
-| 5     | Portfolio planner engine, dashboard and charts                          |       |
+| 4     | Portfolio inputs: income, housing, insurance, bonds, stocks, risk       | Done  |
+| 5     | Portfolio planner engine, dashboard and charts                          | Next  |
 | 6     | Polish: animations, i18n pass, app lock, backup/export, screenshots     |       |
 
 ## Run it
@@ -117,9 +117,10 @@ src/
                 live queries, demo data
   design/       Tokens (colour, type, spacing, radius, shadow, motion), theme, motion helpers
   domain/       Pure finance logic with unit tests: dates, billing cycles, loans, payments,
-                due status, reminders, FX, money formatting, form validation
-  features/     Feature UI built from the components (credit: card art, card deck, product
-                form, payment sheet, reminder scheduling)
+                payment optimizer, holidays, bonds (coupons, YTM), stocks, cash flow, risk
+                profile, FX, money formatting, form validation
+  features/     Feature UI built from the components: credit (card art, card deck, product
+                form, payment sheet, reminders), optimizer, wealth (generic input form)
   hooks/        useToday, useForm, useCountUp
   i18n/         English and Simplified Chinese strings, language detection
   lib/          Platform helpers (haptics, notifications, date formatting, dialogs)
