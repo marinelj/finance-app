@@ -11,8 +11,10 @@ Android from a single codebase.
   consumer credit such as 花呗 (Huabei), 借呗 (Jiebei), 网商贷 (Wangshangdai), 京东白条 and
   微粒贷, sorted by the next due date, with local reminders before each one.
 - **Best card to use today.** Ranks cards by interest-free days for a purchase made today, with a
-  30-day calendar. Loans that charge daily interest from day one (借呗, 网商贷) are never ranked
-  as "free float"; the app shows their real cost instead.
+  30-day calendar. Enter an amount and cards without enough limit left are set aside. Due dates on
+  weekends and bank holidays (mainland China and the US) are flagged. Loans that charge daily
+  interest from day one (借呗, 网商贷) are never ranked as "free float"; the app shows their real
+  cost instead and lists them highest rate first, the order to repay them in.
 - **Portfolio planner.** Income, credit debt, housing, insurance, cash, bonds and stocks feed a
   transparent rules engine that proposes an ordered plan and a target allocation, with the
   reasoning spelled out for every recommendation.
@@ -27,8 +29,8 @@ Android from a single codebase.
 | ----- | ----------------------------------------------------------------------- | ----- |
 | 1     | Project setup, design research, design system, navigation shell         | Done  |
 | 2     | Credit products: data model, add/edit screens, countdown, notifications | Done  |
-| 3     | Payment optimizer and "Best card to use today"                          | Next  |
-| 4     | Portfolio inputs: income, housing, insurance, bonds, stocks, risk       |       |
+| 3     | Payment optimizer and "Best card to use today"                          | Done  |
+| 4     | Portfolio inputs: income, housing, insurance, bonds, stocks, risk       | Next  |
 | 5     | Portfolio planner engine, dashboard and charts                          |       |
 | 6     | Polish: animations, i18n pass, app lock, backup/export, screenshots     |       |
 
