@@ -31,6 +31,8 @@ export type TextFieldProps = {
   multiline?: boolean;
   maxLength?: number;
   autoFocus?: boolean;
+  /** Passwords and passphrases: hidden, no autocorrect or capitalisation. */
+  secure?: boolean;
   style?: StyleProp<ViewStyle>;
 };
 
@@ -50,6 +52,7 @@ export function TextField({
   multiline,
   maxLength,
   autoFocus,
+  secure,
   style,
 }: TextFieldProps) {
   const { colors } = useTheme();
@@ -81,6 +84,10 @@ export function TextField({
           multiline={multiline}
           maxLength={maxLength}
           autoFocus={autoFocus}
+          secureTextEntry={secure}
+          autoCapitalize={secure ? 'none' : undefined}
+          autoCorrect={secure ? false : undefined}
+          textContentType={secure ? 'password' : undefined}
           maxFontSizeMultiplier={2}
           accessibilityLabel={label}
           accessibilityHint={error ?? hint}

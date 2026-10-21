@@ -48,6 +48,13 @@ export function defaultPreferences(deviceLanguage: AppLanguage): Preferences {
 
 const STORAGE_KEY = 'preferences';
 
+const reloadListeners = new Set<() => void>();
+
+/** Re-reads the saved preferences, e.g. after a backup was restored. */
+export function reloadPreferences(): void {
+  reloadListeners.forEach((listener) => listener());
+}
+
 /** Stored preferences over the defaults, ignoring anything a newer or older build left behind. */
 export function mergePreferences(defaults: Preferences, stored: unknown): Preferences {
   if (!stored || typeof stored !== 'object') return defaults;
@@ -97,6 +104,17 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
     mergePreferences(defaultPreferences(languageFromLocales(locales)), readSetting(STORAGE_KEY))
   );
   const language = resolveLanguage(prefs.language, locales);
+
+  useEffect(() => {
+    const reload = () =>
+      setPrefs(
+        mergePreferences(defaultPreferences(languageFromLocales(locales)), readSetting(STORAGE_KEY))
+      );
+    reloadListeners.add(reload);
+    return () => {
+      reloadListeners.delete(reload);
+    };
+  }, [locales]);
 
   useEffect(() => {
     if (i18n.language !== language) void i18n.changeLanguage(language);
