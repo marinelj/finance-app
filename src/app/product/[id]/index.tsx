@@ -25,6 +25,7 @@ import { aprPercent, dailyRatePercent } from '@/domain/credit';
 import { isWeekend } from '@/domain/dates';
 import { dailyInterestCost } from '@/domain/loans';
 import { formatMoney, formatPercent, roundTo } from '@/domain/money';
+import { floatForPurchase } from '@/domain/paymentOptimizer';
 import { dayOfMonthLabel, productTypeLabel, utilizationTone } from '@/features/credit/labels';
 import { PaymentSheet } from '@/features/credit/PaymentSheet';
 import { ProductCard } from '@/features/credit/ProductCard';
@@ -123,6 +124,8 @@ export default function ProductDetailScreen() {
     !product.hasGracePeriod && daily != null && product.balance > 0
       ? dailyInterestCost(product.balance, daily, 1)
       : null;
+
+  const floatToday = floatForPurchase(product, today);
 
   const details: [string, string][] = [
     [t('product.type'), customType ? `${typeLabel} · ${t(`kinds.${product.kind}`)}` : typeLabel],
@@ -439,6 +442,15 @@ export default function ProductDetailScreen() {
               </Text>
             </View>
           ))}
+          {floatToday ? (
+            <Note
+              icon="sparkles-outline"
+              text={t('product.floatToday', {
+                count: floatToday.floatDays,
+                date: date(floatToday.dueDate, true),
+              })}
+            />
+          ) : null}
           {dailyCost != null && dailyCost > 0 ? (
             <Note
               icon="trending-up-outline"
@@ -501,7 +513,8 @@ function Note({
   text,
   tone,
 }: {
-  icon: 'information-circle-outline' | 'calendar-outline' | 'trending-up-outline';
+  icon:
+    'information-circle-outline' | 'calendar-outline' | 'trending-up-outline' | 'sparkles-outline';
   text: string;
   tone?: 'caution';
 }) {

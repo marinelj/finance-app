@@ -53,6 +53,7 @@ function Navigation() {
         <Stack.Screen name="product/new" options={{ presentation: 'modal' }} />
         <Stack.Screen name="product/[id]/index" options={{ title: '' }} />
         <Stack.Screen name="product/[id]/edit" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="optimizer" options={{ title: t('optimizer.title') }} />
         <Stack.Screen name="settings/fx" options={{ title: t('fx.title') }} />
         <Stack.Screen name="settings/types" options={{ title: t('settings.productTypes') }} />
         <Stack.Screen name="design-system" options={{ title: t('settings.designSystem') }} />

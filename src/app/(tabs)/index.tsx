@@ -14,14 +14,17 @@ import { StatTile } from '@/components/StatTile';
 import { Text } from '@/components/Text';
 import { useStyles, useTheme } from '@/design/theme';
 import type { Theme } from '@/design/tokens';
+import { rankByFloat } from '@/domain/paymentOptimizer';
 import { productTypeLabel } from '@/features/credit/labels';
 import { ProductRow } from '@/features/credit/ProductRow';
+import { BestCardPreview } from '@/features/optimizer/BestCardPreview';
 import { dayPart, formatDate, formatLongDate } from '@/lib/format';
 import { haptics } from '@/lib/haptics';
 import { useCreditData } from '@/state/creditData';
 import { usePreferences } from '@/state/preferences';
 
 const UPCOMING = 3;
+const BEST_CARDS = 3;
 
 export default function HomeScreen() {
   const { t } = useTranslation();
@@ -29,7 +32,8 @@ export default function HomeScreen() {
   const { colors } = useTheme();
   const styles = useStyles(makeStyles);
   const { prefs, language, setPreference } = usePreferences();
-  const { statuses, summary, customTypes, today } = useCreditData();
+  const { statuses, summary, customTypes, today, products } = useCreditData();
+  const best = rankByFloat(products, today).ranked.slice(0, BEST_CARDS);
   const now = new Date();
   const currency = prefs.homeCurrency;
   const nextStatus = summary.next
@@ -155,8 +159,19 @@ export default function HomeScreen() {
 
       <Appear index={3}>
         <Card style={styles.gap}>
-          <SectionHeader title={t('home.bestCardToday')} />
-          <Text tone="secondary">{t('home.bestCardEmpty')}</Text>
+          <SectionHeader
+            title={t('home.bestCardToday')}
+            action={
+              best.length > 0
+                ? { label: t('home.bestCardMore'), onPress: () => router.push('/optimizer') }
+                : undefined
+            }
+          />
+          {best.length > 0 ? (
+            <BestCardPreview options={best} products={products} today={today} />
+          ) : (
+            <Text tone="secondary">{t('home.bestCardEmpty')}</Text>
+          )}
         </Card>
       </Appear>
 
