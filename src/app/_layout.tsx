@@ -12,6 +12,7 @@ import { ThemeProvider, useTheme } from '@/design/theme';
 import { NotificationResponder, ReminderSync } from '@/features/credit/ReminderSync';
 import { configureNotifications, notificationsSupported } from '@/lib/notifications';
 import { CreditDataProvider } from '@/state/creditData';
+import { AppLockGate } from '@/state/appLock';
 import { DatabaseGate } from '@/state/DatabaseGate';
 import { PlanProvider } from '@/state/plan';
 import { PreferencesProvider } from '@/state/preferences';
@@ -62,6 +63,7 @@ function Navigation() {
         <Stack.Screen name="wealth/risk" options={{ presentation: 'modal' }} />
         <Stack.Screen name="settings/fx" options={{ title: t('fx.title') }} />
         <Stack.Screen name="settings/types" options={{ title: t('settings.productTypes') }} />
+        <Stack.Screen name="settings/backup" options={{ title: t('backup.title') }} />
         <Stack.Screen name="design-system" options={{ title: t('settings.designSystem') }} />
       </Stack>
       <ReminderSync />
@@ -81,7 +83,9 @@ export default function RootLayout() {
                 <WealthDataProvider>
                   <PlanProvider>
                     <ToastProvider>
-                      <Navigation />
+                      <AppLockGate>
+                        <Navigation />
+                      </AppLockGate>
                     </ToastProvider>
                   </PlanProvider>
                 </WealthDataProvider>

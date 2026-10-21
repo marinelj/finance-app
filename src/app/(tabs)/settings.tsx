@@ -22,6 +22,7 @@ import { notifyPermissionChanged } from '@/features/credit/ReminderSync';
 import type { LanguagePreference } from '@/i18n';
 import { formatHour } from '@/lib/format';
 import { haptics } from '@/lib/haptics';
+import { appLockSupported, canUseAppLock, LOCK_AFTER_CHOICES } from '@/lib/appLock';
 import {
   getNotificationPermission,
   requestNotificationPermission,
@@ -29,6 +30,7 @@ import {
 } from '@/lib/notifications';
 import { useCreditData } from '@/state/creditData';
 import { REMINDER_DAY_CHOICES, usePreferences } from '@/state/preferences';
+import { useAppLock } from '@/state/appLock';
 import { useToast } from '@/state/toast';
 
 const REMINDER_HOURS = [8, 9, 12, 18, 20];
@@ -44,6 +46,12 @@ export default function SettingsScreen() {
   const [currencyOpen, setCurrencyOpen] = useState(false);
   const [permission, setPermission] = useState<PermissionState>('undetermined');
   const [demoLoaded, setDemoLoaded] = useState(hasDemoData);
+  const appLock = useAppLock();
+  const [lockAvailable, setLockAvailable] = useState(appLockSupported);
+
+  useEffect(() => {
+    void canUseAppLock().then(setLockAvailable);
+  }, []);
 
   useEffect(() => {
     void getNotificationPermission().then(setPermission);
@@ -209,6 +217,69 @@ export default function SettingsScreen() {
       <Appear index={2}>
         <Card style={styles.group}>
           <Text variant="micro" tone="muted">
+            {t('security.title')}
+          </Text>
+          <ListRow
+            icon="finger-print"
+            tone="violet"
+            title={t('security.appLock')}
+            subtitle={
+              !appLockSupported
+                ? t('security.unsupported')
+                : lockAvailable
+                  ? t('security.appLockHint')
+                  : t('security.unavailable')
+            }
+            trailing={
+              <Switch
+                accessibilityLabel={t('security.appLock')}
+                value={appLock.settings.enabled}
+                disabled={!lockAvailable}
+                onValueChange={(enabled) =>
+                  void appLock.update({ ...appLock.settings, enabled }).then((changed) => {
+                    if (changed) haptics.success();
+                  })
+                }
+                trackColor={switchColors}
+                ios_backgroundColor={colors.hairline}
+                thumbColor={colors.surface}
+              />
+            }
+          />
+          {appLock.settings.enabled ? (
+            <View style={styles.field}>
+              <Text variant="caption" tone="muted">
+                {t('security.lockAfter')}
+              </Text>
+              <ChipGroup
+                accessibilityLabel={t('security.lockAfter')}
+                value={appLock.settings.lockAfterSeconds}
+                onChange={(lockAfterSeconds) =>
+                  void appLock.update({ ...appLock.settings, lockAfterSeconds })
+                }
+                options={LOCK_AFTER_CHOICES.map((seconds) => ({
+                  value: seconds,
+                  label:
+                    seconds === 0
+                      ? t('security.immediately')
+                      : t('security.afterMinutes', { count: seconds / 60 }),
+                }))}
+              />
+            </View>
+          ) : null}
+          <ListRow
+            icon="cloud-download-outline"
+            tone="mint"
+            title={t('security.backup')}
+            subtitle={t('security.backupHint')}
+            onPress={() => router.push('/settings/backup')}
+          />
+        </Card>
+      </Appear>
+
+      <Appear index={3}>
+        <Card style={styles.group}>
+          <Text variant="micro" tone="muted">
             {t('settings.money')}
           </Text>
           <ListRow
@@ -236,7 +307,7 @@ export default function SettingsScreen() {
         </Card>
       </Appear>
 
-      <Appear index={3}>
+      <Appear index={4}>
         <Card style={styles.group}>
           <Text variant="micro" tone="muted">
             {t('settings.data')}
@@ -270,7 +341,7 @@ export default function SettingsScreen() {
         </Card>
       </Appear>
 
-      <Appear index={4}>
+      <Appear index={5}>
         <Card style={styles.group}>
           <Text variant="micro" tone="muted">
             {t('settings.about')}
