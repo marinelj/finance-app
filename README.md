@@ -26,8 +26,8 @@ Android from a single codebase.
 | Phase | Scope                                                                   | State |
 | ----- | ----------------------------------------------------------------------- | ----- |
 | 1     | Project setup, design research, design system, navigation shell         | Done  |
-| 2     | Credit products: data model, add/edit screens, countdown, notifications | Next  |
-| 3     | Payment optimizer and "Best card to use today"                          |       |
+| 2     | Credit products: data model, add/edit screens, countdown, notifications | Done  |
+| 3     | Payment optimizer and "Best card to use today"                          | Next  |
 | 4     | Portfolio inputs: income, housing, insurance, bonds, stocks, risk       |       |
 | 5     | Portfolio planner engine, dashboard and charts                          |       |
 | 6     | Polish: animations, i18n pass, app lock, backup/export, screenshots     |       |
@@ -54,11 +54,16 @@ npm install
    Android. Your phone and computer need to be on the same Wi-Fi network; if they cannot see each
    other, run `npm start -- --tunnel`.
 
+Nothing is preloaded. To look around with sample cards and loans, open **Me → Load demo data**
+(and **Remove demo data** to delete exactly those items again).
+
 Expo Go limits worth knowing:
 
 - **Face ID does not work in Expo Go on iOS**, so the app lock falls back to your device passcode
   there. Fingerprint unlock on Android works.
-- Notifications are local only, which is all this app uses, so reminders work in Expo Go.
+- Notifications are local only, which is all this app uses, so reminders work in Expo Go. The app
+  asks for permission after you add your first card or loan; reminders fire at 09:00, 3 days and
+  1 day before each due date by default (change both under **Me → Reminders**).
 
 ### With a development build
 
@@ -88,15 +93,16 @@ npx expo run:android
 
 ## Scripts
 
-| Command             | What it does                          |
-| ------------------- | ------------------------------------- |
-| `npm start`         | Dev server for Expo Go                |
-| `npm run start:dev` | Dev server for a development build    |
-| `npm test`          | Jest unit tests                       |
-| `npm run lint`      | ESLint with Prettier formatting rules |
-| `npm run typecheck` | TypeScript in strict mode             |
-| `npm run check`     | All three of the above                |
-| `npm run format`    | Format everything with Prettier       |
+| Command               | What it does                                       |
+| --------------------- | -------------------------------------------------- |
+| `npm start`           | Dev server for Expo Go                             |
+| `npm run start:dev`   | Dev server for a development build                 |
+| `npm test`            | Jest unit tests                                    |
+| `npm run lint`        | ESLint with Prettier formatting rules              |
+| `npm run typecheck`   | TypeScript in strict mode                          |
+| `npm run check`       | All three of the above                             |
+| `npm run format`      | Format everything with Prettier                    |
+| `npm run db:generate` | New SQL migration after editing `src/db/schema.ts` |
 
 ## Project layout
 
@@ -104,12 +110,19 @@ npx expo run:android
 src/
   app/          Routes (expo-router). Every file is a screen; _layout files are navigators.
   components/   Design-system components: Card, StatTile, ProgressRing, DueBadge,
-                AmountText, BottomSheet, EmptyState, TabBar, ...
+                AmountText, BottomSheet, EmptyState, TabBar, form fields, pickers, ...
+  db/           SQLite schema (Drizzle), connection and migrations runner, repositories,
+                live queries, demo data
   design/       Tokens (colour, type, spacing, radius, shadow, motion), theme, motion helpers
-  domain/       Pure finance logic with unit tests (money formatting, due status, ...)
+  domain/       Pure finance logic with unit tests: dates, billing cycles, loans, payments,
+                due status, reminders, FX, money formatting, form validation
+  features/     Feature UI built from the components (credit: card art, card deck, product
+                form, payment sheet, reminder scheduling)
+  hooks/        useToday, useForm, useCountUp
   i18n/         English and Simplified Chinese strings, language detection
-  lib/          Platform helpers (haptics, date formatting)
-  state/        App-wide state (preferences)
+  lib/          Platform helpers (haptics, notifications, date formatting, dialogs)
+  state/        App-wide state: database gate, preferences, credit data, toasts
+drizzle/        Generated SQL migrations (bundled into the app as strings)
 docs/
   design.md     Mobbin research and the design system it led to
 ```
