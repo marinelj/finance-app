@@ -7,7 +7,17 @@ import {
   RATE_UNITS,
   REPAYMENT_METHODS,
 } from '../domain/credit';
+import {
+  CASH_KINDS,
+  EXPENSE_CATEGORIES,
+  HOUSING_KINDS,
+  INCOME_KINDS,
+  INCOME_PERIODS,
+  INSURANCE_TYPES,
+  PREMIUM_PERIODS,
+} from '../domain/cashflow';
 import { CURRENCY_CODES } from '../domain/money';
+import { ASSET_CLASSES } from '../domain/stocks';
 
 /**
  * Local database schema. Money is stored as REAL in major units (yuan, dollars) and rounded to
@@ -132,6 +142,114 @@ export const payments = sqliteTable(
   (table) => [index('payments_product_idx').on(table.productId, table.date)]
 );
 
+/* Portfolio inputs. Column names match the field keys in domain/wealthForms.ts. */
+
+const currency = () => text('currency', { enum: CURRENCY_CODES }).notNull();
+
+export const incomes = sqliteTable('incomes', {
+  id: text('id').primaryKey(),
+  name: text('name').notNull(),
+  kind: text('kind', { enum: INCOME_KINDS }).notNull(),
+  amount: real('amount').notNull(),
+  period: text('period', { enum: INCOME_PERIODS }).notNull(),
+  currency: currency(),
+  notes: text('notes'),
+  ...timestamps,
+});
+
+export const housing = sqliteTable('housing', {
+  id: text('id').primaryKey(),
+  name: text('name').notNull(),
+  kind: text('kind', { enum: HOUSING_KINDS }).notNull(),
+  currency: currency(),
+  monthlyRent: real('monthly_rent'),
+  /** Mortgage still owed. */
+  balance: real('balance'),
+  ratePercent: real('rate_percent'),
+  remainingMonths: integer('remaining_months'),
+  monthlyPayment: real('monthly_payment'),
+  propertyValue: real('property_value'),
+  notes: text('notes'),
+  ...timestamps,
+});
+
+export const insurancePolicies = sqliteTable('insurance_policies', {
+  id: text('id').primaryKey(),
+  name: text('name').notNull(),
+  type: text('type', { enum: INSURANCE_TYPES }).notNull(),
+  insurer: text('insurer'),
+  premium: real('premium').notNull(),
+  premiumPeriod: text('premium_period', { enum: PREMIUM_PERIODS }).notNull(),
+  /** Sum insured. */
+  coverage: real('coverage'),
+  currency: currency(),
+  renewalDate: text('renewal_date'),
+  notes: text('notes'),
+  ...timestamps,
+});
+
+export const expenses = sqliteTable('expenses', {
+  id: text('id').primaryKey(),
+  category: text('category', { enum: EXPENSE_CATEGORIES }).notNull(),
+  label: text('label'),
+  /** Per month. */
+  amount: real('amount').notNull(),
+  currency: currency(),
+  essential: integer('essential', { mode: 'boolean' }).notNull().default(true),
+  notes: text('notes'),
+  ...timestamps,
+});
+
+export const cashAccounts = sqliteTable('cash_accounts', {
+  id: text('id').primaryKey(),
+  name: text('name').notNull(),
+  kind: text('kind', { enum: CASH_KINDS }).notNull(),
+  balance: real('balance').notNull(),
+  currency: currency(),
+  ratePercent: real('rate_percent'),
+  isEmergencyFund: integer('is_emergency_fund', { mode: 'boolean' }).notNull().default(false),
+  notes: text('notes'),
+  ...timestamps,
+});
+
+export const bondHoldings = sqliteTable('bond_holdings', {
+  id: text('id').primaryKey(),
+  issuer: text('issuer').notNull(),
+  name: text('name'),
+  /** CUSIP or ISIN. */
+  identifier: text('identifier'),
+  faceValue: real('face_value').notNull(),
+  couponRate: real('coupon_rate').notNull(),
+  couponFrequency: integer('coupon_frequency').notNull(),
+  maturityDate: text('maturity_date').notNull(),
+  purchaseDate: text('purchase_date'),
+  /** Percent of face value. */
+  purchasePrice: real('purchase_price'),
+  currentPrice: real('current_price'),
+  currency: currency(),
+  notes: text('notes'),
+  ...timestamps,
+});
+
+export const stockHoldings = sqliteTable('stock_holdings', {
+  id: text('id').primaryKey(),
+  ticker: text('ticker').notNull(),
+  name: text('name'),
+  assetClass: text('asset_class', { enum: ASSET_CLASSES }).notNull(),
+  shares: real('shares').notNull(),
+  /** Per share, entered by hand. */
+  price: real('price').notNull(),
+  /** Total paid for the position. */
+  costBasis: real('cost_basis'),
+  /** Per share, per payment. */
+  dividendPerShare: real('dividend_per_share'),
+  dividendFrequency: integer('dividend_frequency').notNull(),
+  firstPayMonth: integer('first_pay_month'),
+  currency: currency(),
+  notes: text('notes'),
+  ...timestamps,
+});
+
 export type SettingRow = typeof settings.$inferSelect;
 export type FxRateRow = typeof fxRates.$inferSelect;
 export type CustomProductType = typeof customProductTypes.$inferSelect;
@@ -139,3 +257,10 @@ export type CreditProductRow = typeof creditProducts.$inferSelect;
 export type NewCreditProduct = typeof creditProducts.$inferInsert;
 export type InstallmentRow = typeof installments.$inferSelect;
 export type PaymentRow = typeof payments.$inferSelect;
+export type IncomeRow = typeof incomes.$inferSelect;
+export type HousingRow = typeof housing.$inferSelect;
+export type InsuranceRow = typeof insurancePolicies.$inferSelect;
+export type ExpenseRow = typeof expenses.$inferSelect;
+export type CashRow = typeof cashAccounts.$inferSelect;
+export type BondRow = typeof bondHoldings.$inferSelect;
+export type StockRow = typeof stockHoldings.$inferSelect;

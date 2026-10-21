@@ -1,6 +1,12 @@
 import { eq, inArray } from 'drizzle-orm';
 
 import { addDays, addMonths, type LocalDate } from '@/domain/dates';
+import {
+  defaultWealthValues,
+  toWealthRecord,
+  type WealthFormValues,
+  type WealthKind,
+} from '@/domain/wealthForms';
 import type { PresetKey } from '@/domain/credit';
 import { defaultFormValues, toProductFields, type ProductFormValues } from '@/domain/productForm';
 import type { CurrencyCode } from '@/domain/money';
@@ -10,6 +16,7 @@ import { saveProduct } from './credit';
 import { newId, nowIso } from './ids';
 import { readSetting, writeSetting } from './settings';
 import { creditProducts, installments, payments } from './schema';
+import { deleteWealthItem, saveWealthItem } from './wealth';
 
 /**
  * Sample data for exploring the app. Only ever loaded from the "Load demo data" button, and
@@ -18,7 +25,10 @@ import { creditProducts, installments, payments } from './schema';
 
 const DEMO_KEY = 'demo';
 
-type DemoState = { productIds: string[] };
+type DemoState = {
+  productIds: string[];
+  wealth?: { kind: WealthKind; id: string }[];
+};
 
 function product(
   preset: PresetKey,
@@ -30,7 +40,176 @@ function product(
 }
 
 export function hasDemoData(): boolean {
-  return (readSetting<DemoState>(DEMO_KEY)?.productIds.length ?? 0) > 0;
+  const state = readSetting<DemoState>(DEMO_KEY);
+  return (state?.productIds.length ?? 0) + (state?.wealth?.length ?? 0) > 0;
+}
+
+/** Sample income, home, insurance, spending, savings and investments. */
+function demoWealth(home: CurrencyCode): [WealthKind, WealthFormValues][] {
+  const item = (kind: WealthKind, values: WealthFormValues): [WealthKind, WealthFormValues] => [
+    kind,
+    { ...defaultWealthValues(kind, home), ...values },
+  ];
+  const usIsHome = home === 'USD';
+  const cnIsHome = home === 'CNY';
+  return [
+    item('income', {
+      name: '工资',
+      kind: 'salary',
+      amount: '32000',
+      period: 'monthly',
+      currency: 'CNY',
+    }),
+    item('income', {
+      name: '年终奖',
+      kind: 'bonus',
+      amount: '90000',
+      period: 'annual',
+      currency: 'CNY',
+    }),
+    item('income', {
+      name: 'Freelance',
+      kind: 'side',
+      amount: '800',
+      period: 'monthly',
+      currency: 'USD',
+    }),
+    item('housing', {
+      name: '上海的家',
+      kind: 'mortgage',
+      currency: 'CNY',
+      balance: '1150000',
+      ratePercent: '3.1',
+      remainingMonths: '312',
+      propertyValue: '3800000',
+    }),
+    item('insurance', {
+      name: '百万医疗险',
+      type: 'health',
+      premium: '1200',
+      premiumPeriod: 'annual',
+      coverage: '3000000',
+      currency: 'CNY',
+    }),
+    item('insurance', {
+      name: '重疾险',
+      type: 'critical_illness',
+      premium: '8600',
+      premiumPeriod: 'annual',
+      coverage: '500000',
+      currency: 'CNY',
+    }),
+    item('insurance', {
+      name: '定期寿险',
+      type: 'life',
+      premium: '2800',
+      premiumPeriod: 'annual',
+      coverage: '1500000',
+      currency: 'CNY',
+    }),
+    item('expense', { category: 'food', amount: '4500', currency: 'CNY', essential: true }),
+    item('expense', { category: 'transport', amount: '800', currency: 'CNY', essential: true }),
+    item('expense', { category: 'utilities', amount: '600', currency: 'CNY', essential: true }),
+    item('expense', {
+      category: 'family',
+      label: '父母生活费',
+      amount: '2000',
+      currency: 'CNY',
+      essential: true,
+    }),
+    item('expense', {
+      category: 'entertainment',
+      amount: '1500',
+      currency: 'CNY',
+      essential: false,
+    }),
+    item('expense', { category: 'travel', amount: '2000', currency: 'CNY', essential: false }),
+    item('cash', {
+      name: '招行储蓄',
+      kind: 'savings',
+      balance: '40000',
+      currency: 'CNY',
+      ratePercent: '1.25',
+      isEmergencyFund: true,
+    }),
+    item('cash', {
+      name: '余额宝',
+      kind: 'money_market',
+      balance: '25000',
+      currency: 'CNY',
+      ratePercent: '1.4',
+    }),
+    item('cash', { name: 'Schwab cash', kind: 'checking', balance: '3200', currency: 'USD' }),
+    item('bond', {
+      issuer: 'Apple Inc.',
+      name: 'AAPL 4.65 02/23/46',
+      faceValue: '10000',
+      couponRate: '4.65',
+      couponFrequency: '2',
+      maturityDate: '2046-02-23',
+      purchaseDate: '2025-03-12',
+      purchasePrice: '92.5',
+      currency: 'USD',
+    }),
+    item('bond', {
+      issuer: 'JPMorgan Chase & Co.',
+      name: 'JPM 5.35 06/01/34',
+      faceValue: '10000',
+      couponRate: '5.35',
+      couponFrequency: '2',
+      maturityDate: '2034-06-01',
+      purchaseDate: '2025-08-04',
+      purchasePrice: '101.4',
+      currency: 'USD',
+    }),
+    item('bond', {
+      issuer: 'Microsoft Corp.',
+      name: 'MSFT 3.3 02/06/27',
+      faceValue: '5000',
+      couponRate: '3.3',
+      couponFrequency: '2',
+      maturityDate: '2027-02-06',
+      purchaseDate: '2024-11-18',
+      purchasePrice: '98.2',
+      currency: 'USD',
+    }),
+    item('stock', {
+      ticker: 'VTI',
+      name: 'Vanguard Total Stock Market ETF',
+      assetClass: usIsHome ? 'domestic_equity' : 'international_equity',
+      shares: '40',
+      price: '250',
+      costBasis: '8000',
+      dividendPerShare: '0.9',
+      dividendFrequency: '4',
+      firstPayMonth: '3',
+      currency: 'USD',
+    }),
+    item('stock', {
+      ticker: 'VXUS',
+      name: 'Vanguard Total International Stock ETF',
+      assetClass: 'international_equity',
+      shares: '100',
+      price: '68',
+      costBasis: '6100',
+      dividendPerShare: '0.45',
+      dividendFrequency: '4',
+      firstPayMonth: '3',
+      currency: 'USD',
+    }),
+    item('stock', {
+      ticker: '510300',
+      name: '沪深300ETF',
+      assetClass: cnIsHome ? 'domestic_equity' : 'international_equity',
+      shares: '20000',
+      price: '4.05',
+      costBasis: '76000',
+      dividendPerShare: '0.07',
+      dividendFrequency: '1',
+      firstPayMonth: '1',
+      currency: 'CNY',
+    }),
+  ];
 }
 
 export function loadDemoData(today: LocalDate, home: CurrencyCode): void {
@@ -122,12 +301,22 @@ export function loadDemoData(today: LocalDate, home: CurrencyCode): void {
     ])
     .run();
 
-  const previous = readSetting<DemoState>(DEMO_KEY)?.productIds ?? [];
-  writeSetting(DEMO_KEY, { productIds: [...previous, ...ids] } satisfies DemoState);
+  const wealth = demoWealth(home).map(([kind, values]) => ({
+    kind,
+    id: saveWealthItem(kind, null, toWealthRecord(kind, values)),
+  }));
+
+  const previous = readSetting<DemoState>(DEMO_KEY);
+  writeSetting(DEMO_KEY, {
+    productIds: [...(previous?.productIds ?? []), ...ids],
+    wealth: [...(previous?.wealth ?? []), ...wealth],
+  } satisfies DemoState);
 }
 
 export function removeDemoData(): void {
-  const ids = readSetting<DemoState>(DEMO_KEY)?.productIds ?? [];
+  const state = readSetting<DemoState>(DEMO_KEY);
+  const ids = state?.productIds ?? [];
+  for (const { kind, id } of state?.wealth ?? []) deleteWealthItem(kind, id);
   if (ids.length > 0) {
     getDb().transaction((tx) => {
       tx.delete(payments).where(inArray(payments.productId, ids)).run();
@@ -135,5 +324,5 @@ export function removeDemoData(): void {
       tx.delete(creditProducts).where(inArray(creditProducts.id, ids)).run();
     });
   }
-  writeSetting(DEMO_KEY, { productIds: [] } satisfies DemoState);
+  writeSetting(DEMO_KEY, { productIds: [], wealth: [] } satisfies DemoState);
 }
