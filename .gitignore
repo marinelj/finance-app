@@ -41,3 +41,21 @@ example
 # generated native folders
 /ios
 /android
+
+# test output
+coverage/
+
+# secrets and keys: never commit
+.env
+.env.*
+*.keystore
+google-services.json
+GoogleService-Info.plist
+
+# local data: never commit real financial data
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.fabackup
+finance-backup*.json
