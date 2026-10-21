@@ -18,6 +18,7 @@ import { haptics } from '@/lib/haptics';
 import { usePreferences } from '@/state/preferences';
 
 import { BottomSheet } from './BottomSheet';
+import { Button } from './Button';
 import { Icon } from './Icon';
 import { Text } from './Text';
 
@@ -30,6 +31,8 @@ type DatePickerSheetProps = {
   onClose: () => void;
   min?: LocalDate;
   max?: LocalDate;
+  /** Offer a "clear" button for optional dates. */
+  onClear?: () => void;
 };
 
 /** Month calendar in a sheet. Dates are local calendar days, never instants. */
@@ -42,6 +45,7 @@ export function DatePickerSheet({
   onClose,
   min,
   max,
+  onClear,
 }: DatePickerSheetProps) {
   const { t } = useTranslation();
   const { colors } = useTheme();
@@ -65,7 +69,23 @@ export function DatePickerSheet({
   };
 
   return (
-    <BottomSheet visible={visible} onClose={onClose} title={title}>
+    <BottomSheet
+      visible={visible}
+      onClose={onClose}
+      title={title}
+      footer={
+        onClear && value ? (
+          <Button
+            label={t('common.clear')}
+            variant="ghost"
+            fullWidth
+            onPress={() => {
+              onClear();
+              onClose();
+            }}
+          />
+        ) : undefined
+      }>
       <View style={styles.header}>
         <Pressable
           onPress={() => move(-1)}

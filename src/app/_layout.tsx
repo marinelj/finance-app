@@ -15,6 +15,7 @@ import { CreditDataProvider } from '@/state/creditData';
 import { DatabaseGate } from '@/state/DatabaseGate';
 import { PreferencesProvider } from '@/state/preferences';
 import { ToastProvider } from '@/state/toast';
+import { WealthDataProvider } from '@/state/wealthData';
 
 // The splash screen stays up until the database is open (see DatabaseGate).
 SplashScreen.preventAutoHideAsync().catch(() => {
@@ -54,6 +55,9 @@ function Navigation() {
         <Stack.Screen name="product/[id]/index" options={{ title: '' }} />
         <Stack.Screen name="product/[id]/edit" options={{ presentation: 'modal' }} />
         <Stack.Screen name="optimizer" options={{ title: t('optimizer.title') }} />
+        <Stack.Screen name="wealth/[kind]/index" options={{ title: '' }} />
+        <Stack.Screen name="wealth/[kind]/edit" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="wealth/risk" options={{ presentation: 'modal' }} />
         <Stack.Screen name="settings/fx" options={{ title: t('fx.title') }} />
         <Stack.Screen name="settings/types" options={{ title: t('settings.productTypes') }} />
         <Stack.Screen name="design-system" options={{ title: t('settings.designSystem') }} />
@@ -72,9 +76,11 @@ export default function RootLayout() {
           <DatabaseGate>
             <PreferencesProvider>
               <CreditDataProvider>
-                <ToastProvider>
-                  <Navigation />
-                </ToastProvider>
+                <WealthDataProvider>
+                  <ToastProvider>
+                    <Navigation />
+                  </ToastProvider>
+                </WealthDataProvider>
               </CreditDataProvider>
             </PreferencesProvider>
           </DatabaseGate>

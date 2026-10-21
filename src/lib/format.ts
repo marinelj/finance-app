@@ -93,6 +93,11 @@ export function formatMonth(year: number, month: number, language: AppLanguage):
   return `${names[month - 1]} ${year}`;
 }
 
+/** "Mar" / "3月". */
+export function formatMonthShort(month: number, language: AppLanguage): string {
+  return language === 'zh-Hans' ? `${month}月` : MONTHS_EN[month - 1];
+}
+
 /** One-letter (en) or one-character (zh) weekday headers, Sunday first. */
 export function weekdayInitials(language: AppLanguage): string[] {
   return language === 'zh-Hans'
