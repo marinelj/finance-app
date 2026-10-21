@@ -1,4 +1,4 @@
-import { addDays, type LocalDate } from './dates';
+import { addDays, atLocalTime, type LocalDate } from './dates';
 
 export type ReminderSource = { productId: string; dueDates: LocalDate[] };
 
@@ -49,4 +49,24 @@ export function planReminders(
       : a.productId.localeCompare(b.productId) || b.daysBefore - a.daysBefore
   );
   return plan.slice(0, limit);
+}
+
+export type TimedReminder = PlannedReminder & { fireAt: Date };
+
+/**
+ * The reminders to hand to the OS: `planReminders` at a local wall-clock hour, dropping any whose
+ * time has already passed today.
+ */
+export function remindersToSchedule(
+  sources: ReminderSource[],
+  today: LocalDate,
+  offsets: number[],
+  hour: number,
+  now: Date,
+  limit = MAX_SCHEDULED_REMINDERS
+): TimedReminder[] {
+  return planReminders(sources, today, offsets, Number.POSITIVE_INFINITY)
+    .map((item) => ({ ...item, fireAt: atLocalTime(item.fireDate, hour) }))
+    .filter((item) => item.fireAt.getTime() > now.getTime())
+    .slice(0, limit);
 }

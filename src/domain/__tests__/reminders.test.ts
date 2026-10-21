@@ -1,4 +1,4 @@
-import { planReminders } from '../reminders';
+import { planReminders, remindersToSchedule } from '../reminders';
 
 describe('planReminders', () => {
   const today = '2026-10-21';
@@ -42,5 +42,32 @@ describe('planReminders', () => {
       dueDates: ['2026-11-15', '2026-12-15'],
     }));
     expect(planReminders(sources, today, [3, 1])).toHaveLength(60);
+  });
+});
+
+describe('remindersToSchedule', () => {
+  const sources = [{ productId: 'a', dueDates: ['2026-10-24'] }];
+
+  it('fires at the chosen local hour', () => {
+    const plan = remindersToSchedule(sources, '2026-10-21', [3, 1], 9, new Date(2026, 9, 21, 8, 0));
+    expect(plan.map((item) => item.fireDate)).toEqual(['2026-10-21', '2026-10-23']);
+    expect(plan[0].fireAt).toEqual(new Date(2026, 9, 21, 9, 0));
+  });
+
+  it('drops a reminder whose time already passed today', () => {
+    const plan = remindersToSchedule(
+      sources,
+      '2026-10-21',
+      [3, 1],
+      9,
+      new Date(2026, 9, 21, 10, 0)
+    );
+    expect(plan.map((item) => item.fireDate)).toEqual(['2026-10-23']);
+  });
+
+  it('caps the result after dropping past reminders', () => {
+    const many = [{ productId: 'a', dueDates: ['2026-10-22', '2026-10-25', '2026-10-30'] }];
+    const plan = remindersToSchedule(many, '2026-10-21', [1], 9, new Date(2026, 9, 21, 10, 0), 2);
+    expect(plan.map((item) => item.dueDate)).toEqual(['2026-10-25', '2026-10-30']);
   });
 });
