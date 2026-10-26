@@ -32,6 +32,7 @@ import { useCreditData } from '@/state/creditData';
 import { REMINDER_DAY_CHOICES, usePreferences } from '@/state/preferences';
 import { useAppLock } from '@/state/appLock';
 import { useToast } from '@/state/toast';
+import { useWebStorageStatus } from '@/state/WebRuntime';
 
 const REMINDER_HOURS = [8, 9, 12, 18, 20];
 
@@ -48,6 +49,7 @@ export default function SettingsScreen() {
   const [demoLoaded, setDemoLoaded] = useState(hasDemoData);
   const appLock = useAppLock();
   const [lockAvailable, setLockAvailable] = useState(appLockSupported);
+  const webStorageStatus = useWebStorageStatus();
 
   useEffect(() => {
     void canUseAppLock().then(setLockAvailable);
@@ -370,6 +372,34 @@ export default function SettingsScreen() {
           </Text>
         </Card>
       </Appear>
+
+      {process.env.EXPO_OS === 'web' ? (
+        <Appear index={6}>
+          <Card style={styles.group}>
+            <Text variant="micro" tone="muted">
+              {t('web.storageTitle')}
+            </Text>
+            <ListRow
+              icon="server-outline"
+              tone="sky"
+              title={t('web.storageStatus')}
+              subtitle={t(`web.storage.${webStorageStatus}`)}
+            />
+            <View style={styles.note}>
+              <Icon name="information-circle-outline" size={16} color={colors.textMuted} />
+              <Text variant="caption" tone="muted" style={styles.flex}>
+                {t('web.safariStorageHint')}
+              </Text>
+            </View>
+            <View style={styles.note}>
+              <Icon name="cloud-download-outline" size={16} color={colors.textMuted} />
+              <Text variant="caption" tone="muted" style={styles.flex}>
+                {t('web.backupHint')}
+              </Text>
+            </View>
+          </Card>
+        </Appear>
+      ) : null}
 
       <BottomSheet
         visible={currencyOpen}

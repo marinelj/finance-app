@@ -1,7 +1,7 @@
 # Finance
 
-A local-first personal finance app for one person, built with Expo (React Native) for iOS and
-Android from a single codebase.
+A local-first personal finance app for one person, built with Expo (React Native) for iOS,
+Android and the web from a single codebase.
 
 > This is a planning tool, not licensed financial advice.
 
@@ -22,9 +22,9 @@ Android from a single codebase.
   figures behind it. The dashboard adds net worth and its monthly trend, cash flow, a 12-month
   passive-income calendar (bond coupons and dividends), five health ratios with traffic lights,
   and a what-if projection over 5, 10 and 20 years. No LLM, no network.
-- **Private by design.** All data stays on the device in SQLite. No account, no backend, no
-  analytics. An app lock (Face ID, fingerprint or passcode) guards it, and passphrase-encrypted
-  backups let you move to a new phone.
+- **Private by design.** All data stays on the device or in this browser's SQLite storage. No
+  account, no backend, no analytics. The native app offers Face ID, fingerprint or passcode lock;
+  passphrase-encrypted backups move data between devices and browsers.
 - Simplified Chinese and English, multi-currency with a home currency and editable FX rates.
 
 ## Screenshots
@@ -119,12 +119,40 @@ npx expo run:android
 | --------------------- | -------------------------------------------------- |
 | `npm start`           | Dev server for Expo Go                             |
 | `npm run start:dev`   | Dev server for a development build                 |
+| `npm run web`         | Web dev server with SQLite isolation headers       |
+| `npm run web:export`  | Export the offline web app to `dist/`              |
+| `npm run web:serve`   | Serve `dist/` with SPA fallback and isolation      |
 | `npm test`            | Jest unit tests                                    |
 | `npm run lint`        | ESLint with Prettier formatting rules              |
 | `npm run typecheck`   | TypeScript in strict mode                          |
 | `npm run check`       | All three of the above                             |
 | `npm run format`      | Format everything with Prettier                    |
 | `npm run db:generate` | New SQL migration after editing `src/db/schema.ts` |
+
+## Web
+
+For development on a Mac, run `npm run web` and open the URL printed by Expo. The `/` route
+works with SQLite. For a production-style local build, run:
+
+```bash
+npm run web:export
+npm run web:serve
+```
+
+Open `http://127.0.0.1:4173/` in Safari or Chrome. The export includes a manifest, install
+icons and a service worker that caches the app and its SQLite WebAssembly file. After one visit,
+the app can reload offline. When a new export is served, an in-app prompt offers to reload.
+
+The web database lives in this browser's origin-private file system. Each browser and installed
+app keeps its own data; use **Me → Backup and restore** to move it. The app requests persistent
+storage when the browser supports it, and **Me → Web storage** reports the result. Safari may
+remove site data after an extended period without a visit, so install the app to the Home Screen
+or Dock and keep encrypted backups. App lock and local reminders require the native phone app.
+
+Phones need HTTPS for service workers, OPFS and SQLite. A plain `http://` LAN address will not
+work. Use a trusted HTTPS preview or tunnel for phone testing. A host serving from a subfolder
+can set `expo.experiments.baseUrl` in `app.json` before export and mount the generated `dist/`
+there. The local `web:serve` script uses the same base path automatically.
 
 ## Project layout
 
@@ -153,8 +181,8 @@ docs/
 
 ## Privacy and security
 
-- Data never leaves the phone unless you export a backup yourself. No analytics, crash reporting
-  or network calls of any kind.
+- Data never leaves the device or browser unless you export a backup yourself. No analytics,
+  crash reporting or runtime requests to remote services.
 - **App lock** (Me → Security): Face ID, Touch ID or fingerprint, falling back to the device
   passcode. It locks at launch and after the app has been in the background longer than the delay
   you choose, and covers the screen in the app switcher. The setting lives in the OS
