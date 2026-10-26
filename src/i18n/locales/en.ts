@@ -825,6 +825,22 @@ const en = {
     backup: 'Backup and restore',
     backupHint: 'An encrypted file you keep, for moving phones',
   },
+  web: {
+    storageTitle: 'Web storage',
+    storageStatus: 'Browser storage',
+    storage: {
+      checking: 'Checking whether this browser can keep data on this device.',
+      persistent: 'Persistent storage was granted by this browser.',
+      bestEffort: 'The browser may clear this site’s data when it needs space.',
+      unsupported: 'This browser does not report storage persistence.',
+    },
+    safariStorageHint:
+      'Safari may remove website data after about seven days without a visit. Add Finance to your Home Screen or Dock to help keep it. Each browser and installed app keeps its own data.',
+    backupHint:
+      'Keep a regular encrypted backup. Use Backup and restore to move data between your phone and this browser.',
+    updateReady: 'A new version of Finance is ready.',
+    reload: 'Reload',
+  },
   settings: {
     title: 'Me',
     preferences: 'Preferences',

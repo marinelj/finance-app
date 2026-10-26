@@ -807,6 +807,21 @@ const zhHans: Translation = {
     backup: '备份与恢复',
     backupHint: '加密文件由你保管，方便换手机',
   },
+  web: {
+    storageTitle: '网页存储',
+    storageStatus: '浏览器存储',
+    storage: {
+      checking: '正在检查此浏览器能否在这台设备上保留数据。',
+      persistent: '浏览器已授予持久存储权限。',
+      bestEffort: '浏览器可能会在需要空间时清除此网站的数据。',
+      unsupported: '此浏览器未提供存储持久性状态。',
+    },
+    safariStorageHint:
+      'Safari 可能会在网站约七天无人访问后清除网站数据。将 Finance 添加到主屏幕或程序坞有助于保留数据。浏览器与已安装的应用各自保存数据。',
+    backupHint: '请定期保留加密备份。使用“备份与恢复”在手机和此浏览器间转移数据。',
+    updateReady: 'Finance 有新版本可用。',
+    reload: '重新加载',
+  },
   settings: {
     title: '我的',
     preferences: '偏好设置',

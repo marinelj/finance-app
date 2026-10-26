@@ -17,7 +17,10 @@ import { DatabaseGate } from '@/state/DatabaseGate';
 import { PlanProvider } from '@/state/plan';
 import { PreferencesProvider } from '@/state/preferences';
 import { ToastProvider } from '@/state/toast';
+import { WebRuntime } from '@/state/WebRuntime';
 import { WealthDataProvider } from '@/state/wealthData';
+
+export const unstable_settings = { anchor: '(tabs)' };
 
 // The splash screen stays up until the database is open (see DatabaseGate).
 SplashScreen.preventAutoHideAsync().catch(() => {
@@ -77,21 +80,23 @@ export default function RootLayout() {
     <GestureHandlerRootView style={styles.root}>
       <SafeAreaProvider>
         <ThemeProvider>
-          <DatabaseGate>
-            <PreferencesProvider>
-              <CreditDataProvider>
-                <WealthDataProvider>
-                  <PlanProvider>
-                    <ToastProvider>
-                      <AppLockGate>
-                        <Navigation />
-                      </AppLockGate>
-                    </ToastProvider>
-                  </PlanProvider>
-                </WealthDataProvider>
-              </CreditDataProvider>
-            </PreferencesProvider>
-          </DatabaseGate>
+          <WebRuntime>
+            <DatabaseGate>
+              <PreferencesProvider>
+                <CreditDataProvider>
+                  <WealthDataProvider>
+                    <PlanProvider>
+                      <ToastProvider>
+                        <AppLockGate>
+                          <Navigation />
+                        </AppLockGate>
+                      </ToastProvider>
+                    </PlanProvider>
+                  </WealthDataProvider>
+                </CreditDataProvider>
+              </PreferencesProvider>
+            </DatabaseGate>
+          </WebRuntime>
         </ThemeProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
