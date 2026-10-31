@@ -3,6 +3,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 
 import { useStyles, useTheme } from '@/design/theme';
 import type { AccentTone, Theme } from '@/design/tokens';
+import { useHover } from '@/hooks/useHover';
 
 import { Icon, type IconName } from './Icon';
 import { IconChip } from './IconChip';
@@ -36,6 +37,7 @@ export function ListRow({
 }: ListRowProps) {
   const { colors } = useTheme();
   const styles = useStyles(makeStyles);
+  const { hovered, hoverProps } = useHover();
 
   const content = (
     <>
@@ -66,10 +68,11 @@ export function ListRow({
   return (
     <Pressable
       onPress={onPress}
+      {...hoverProps}
       accessibilityRole="button"
       accessibilityLabel={[title, value].filter(Boolean).join(', ')}
       accessibilityHint={accessibilityHint ?? subtitle}
-      style={({ pressed }) => [styles.row, pressed && styles.pressed]}>
+      style={({ pressed }) => [styles.row, (pressed || hovered) && styles.pressed]}>
       {content}
     </Pressable>
   );

@@ -11,6 +11,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { ThemeProvider, useTheme } from '@/design/theme';
 import { NotificationResponder, ReminderSync } from '@/features/credit/ReminderSync';
 import { configureNotifications, notificationsSupported } from '@/lib/notifications';
+import { installWebStyles } from '@/lib/webStyles';
 import { CreditDataProvider } from '@/state/creditData';
 import { AppLockGate } from '@/state/appLock';
 import { DatabaseGate } from '@/state/DatabaseGate';
@@ -24,6 +25,7 @@ SplashScreen.preventAutoHideAsync().catch(() => {
   // Already hidden, e.g. after a fast refresh.
 });
 configureNotifications();
+installWebStyles();
 
 function Navigation() {
   const { t } = useTranslation();

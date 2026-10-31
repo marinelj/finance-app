@@ -9,7 +9,7 @@ import { Card } from '@/components/Card';
 import { TextField } from '@/components/form/TextField';
 import { Text } from '@/components/Text';
 import { useStyles } from '@/design/theme';
-import type { Theme } from '@/design/tokens';
+import { space, type Theme } from '@/design/tokens';
 import { resetFxTable, saveFxTable } from '@/db/fx';
 import { rate, withRateToHome, type FxTable } from '@/domain/fx';
 import { CURRENCIES, CURRENCY_CODES, roundTo, type CurrencyCode } from '@/domain/money';
@@ -18,6 +18,7 @@ import { haptics } from '@/lib/haptics';
 import { useCreditData } from '@/state/creditData';
 import { usePreferences } from '@/state/preferences';
 import { useToast } from '@/state/toast';
+import { CONTENT_MAX_WIDTH, useCenteredGutter } from '@/lib/platform';
 
 /** Hand-entered exchange rates, shown as "1 USD in CNY" against the home currency. */
 export default function ExchangeRatesScreen() {
@@ -26,6 +27,7 @@ export default function ExchangeRatesScreen() {
   const toast = useToast();
   const styles = useStyles(makeStyles);
   const insets = useSafeAreaInsets();
+  const gutter = useCenteredGutter(space.xl);
   const { prefs } = usePreferences();
   const { fx } = useCreditData();
   const home = prefs.homeCurrency;
@@ -100,7 +102,8 @@ export default function ExchangeRatesScreen() {
           style={styles.center}
         />
       </ScrollView>
-      <View style={[styles.footer, { paddingBottom: insets.bottom + 12 }]}>
+      <View
+        style={[styles.footer, { paddingBottom: insets.bottom + 12, paddingHorizontal: gutter }]}>
         <Button label={t('common.save')} size="lg" fullWidth onPress={save} haptic={false} />
       </View>
     </KeyboardAvoidingView>
@@ -110,7 +113,13 @@ export default function ExchangeRatesScreen() {
 const makeStyles = ({ colors, space }: Theme) =>
   StyleSheet.create({
     flex: { flex: 1 },
-    content: { padding: space.xl, gap: space.lg },
+    content: {
+      padding: space.xl,
+      gap: space.lg,
+      width: '100%',
+      maxWidth: CONTENT_MAX_WIDTH,
+      alignSelf: 'center',
+    },
     card: { gap: space.md },
     center: { alignSelf: 'center' },
     footer: {

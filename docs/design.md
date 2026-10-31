@@ -160,8 +160,30 @@ the hero and display tokens so big numbers do not overflow their cards.
   at the back with a haptic tick.
 - Haptics (`expo-haptics`): selection on tab change and chips, light impact on card swipe,
   success notification on "mark as paid" and on save.
+- Card deck feedback: the cards behind rise as the front card is dragged, a selection tick
+  marks the point where letting go will flip, and dots (or "3 / 12" past eight cards) show the
+  position.
+- Tabs: the icon of the newly selected tab pops; tapping the active tab again scrolls its page
+  back to the top.
+- Forms: a field whose error appears gives a short shake and its message fades in.
+- Toasts: flick down or sideways to dismiss early.
 - **Reduce Motion:** every animation reads `useReducedMotion()`; when it is on, counts jump to
   the final value, layout animations are skipped and the deck switches without the fly-off.
+
+### Browser version
+
+The same code runs in a browser (`npm run web`). On top of the mobile behaviour:
+
+- **Pointer:** pressables lift 2 pt under the mouse, buttons darken to their hover colour,
+  list rows, chips, segments and tabs show a tint, and pressable cards gain the raised shadow.
+  Hover colours (`primarySoftHover`, `status.*.softHover`) keep text at 4.5:1 or better.
+- **Keyboard:** a 3 pt violet focus ring appears for keyboard focus only (`:focus-visible`);
+  the card deck answers ← / → and has previous / next buttons; Escape closes sheets.
+- **Wide windows (≥ 768 pt):** page content is centred at 760 pt, the tab bar narrows to 480 pt,
+  bottom sheets become centred dialogs that rise and fade in, toasts stay 480 pt wide and pause
+  their timer while the pointer rests on them.
+
+The CSS that React Native styles cannot express lives in `src/lib/webStyles.ts`.
 
 ## Decisions that differ from the original brief
 

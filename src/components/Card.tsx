@@ -4,6 +4,7 @@ import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 
 import { useStyles, useTheme } from '@/design/theme';
 import type { AccentTone, Theme } from '@/design/tokens';
+import { useHover } from '@/hooks/useHover';
 
 import { PressableScale } from './PressableScale';
 
@@ -35,6 +36,8 @@ export function Card({
   const theme = useTheme();
   const styles = useStyles(makeStyles);
   const pad = padding === 0 ? 0 : theme.space[padding];
+  const { hovered, hoverProps } = useHover();
+  const lifted = Boolean(onPress) && hovered;
 
   const surface: StyleProp<ViewStyle> = [
     styles.base,
@@ -43,6 +46,7 @@ export function Card({
     variant === 'outline' && styles.outline,
     variant === 'tinted' && { backgroundColor: theme.colors.accentSoft[tone] },
     variant === 'gradient' && styles.gradientShadow,
+    lifted && variant !== 'tinted' && styles.hovered,
     style,
   ];
 
@@ -66,7 +70,8 @@ export function Card({
       accessibilityLabel={accessibilityLabel}
       accessibilityHint={accessibilityHint}
       haptic="light"
-      onPress={onPress}>
+      onPress={onPress}
+      {...hoverProps}>
       {body}
     </PressableScale>
   );
@@ -82,5 +87,6 @@ const makeStyles = ({ colors, radius, shadow }: Theme) =>
       borderColor: colors.hairline,
     },
     gradientShadow: { boxShadow: shadow.raised },
+    hovered: { boxShadow: shadow.raised },
     clip: { overflow: 'hidden' },
   });

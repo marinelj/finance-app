@@ -40,12 +40,18 @@ describe('light theme contrast', () => {
 
   it('keeps primary text readable on the primary tint', () => {
     expect(contrastRatio(c.primaryText, c.primarySoft)).toBeGreaterThanOrEqual(TEXT);
+    expect(contrastRatio(c.primaryText, c.primarySoftHover)).toBeGreaterThanOrEqual(TEXT);
+  });
+
+  it('keeps button text readable in the hover colours', () => {
+    expect(contrastRatio(c.surface, c.textSecondary)).toBeGreaterThanOrEqual(TEXT);
   });
 
   it.each(Object.entries(c.status))(
     'status %s text is readable on its tint and on cards',
     (_tone, s) => {
       expect(contrastRatio(s.text, s.soft)).toBeGreaterThanOrEqual(TEXT);
+      expect(contrastRatio(s.text, s.softHover)).toBeGreaterThanOrEqual(TEXT);
       expect(contrastRatio(s.text, c.surface)).toBeGreaterThanOrEqual(TEXT);
     }
   );

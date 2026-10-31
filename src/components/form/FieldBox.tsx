@@ -1,5 +1,14 @@
-import type { ReactNode } from 'react';
+import { useEffect, useRef, type ReactNode } from 'react';
 import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
+import Animated, {
+  FadeIn,
+  useAnimatedStyle,
+  useSharedValue,
+  withSequence,
+  withTiming,
+} from 'react-native-reanimated';
+
+import { useMotion } from '@/design/motion';
 
 import { useStyles, useTheme } from '@/design/theme';
 import type { Theme } from '@/design/tokens';
@@ -17,14 +26,37 @@ export type FieldBoxProps = {
   style?: StyleProp<ViewStyle>;
 };
 
-/** Field chrome: the label sits inside the box above the value; hint or error below it. */
+/**
+ * Field chrome: the label sits inside the box above the value; hint or error below it. When an
+ * error appears the box gives a short shake so the eye finds it (skipped under Reduce Motion).
+ */
 export function FieldBox({ label, error, hint, focused, aside, children, style }: FieldBoxProps) {
   const { colors } = useTheme();
   const styles = useStyles(makeStyles);
+  const { reduceMotion } = useMotion();
   const borderColor = error ? colors.status.danger.mark : focused ? colors.primary : 'transparent';
+
+  const shake = useSharedValue(0);
+  const hadError = useRef(Boolean(error));
+  useEffect(() => {
+    const appeared = Boolean(error) && !hadError.current;
+    hadError.current = Boolean(error);
+    if (!appeared || reduceMotion) return;
+    shake.set(
+      withSequence(
+        withTiming(-6, { duration: 50 }),
+        withTiming(6, { duration: 60 }),
+        withTiming(-4, { duration: 60 }),
+        withTiming(4, { duration: 60 }),
+        withTiming(0, { duration: 50 })
+      )
+    );
+  }, [error, reduceMotion, shake]);
+  const shakeStyle = useAnimatedStyle(() => ({ transform: [{ translateX: shake.get() }] }));
+
   return (
     <View style={[styles.wrapper, style]}>
-      <View style={[styles.box, { borderColor }]}>
+      <Animated.View style={[styles.box, { borderColor }, shakeStyle]}>
         <View style={styles.labelRow}>
           <Text variant="caption" tone={error ? 'danger' : 'muted'} style={styles.label}>
             {label}
@@ -36,11 +68,13 @@ export function FieldBox({ label, error, hint, focused, aside, children, style }
           ) : null}
         </View>
         {children}
-      </View>
+      </Animated.View>
       {error ? (
-        <Text variant="caption" tone="danger" accessibilityLiveRegion="polite">
-          {error}
-        </Text>
+        <Animated.View entering={reduceMotion ? undefined : FadeIn.duration(150)}>
+          <Text variant="caption" tone="danger" accessibilityLiveRegion="polite">
+            {error}
+          </Text>
+        </Animated.View>
       ) : hint ? (
         <Text variant="caption" tone="muted">
           {hint}

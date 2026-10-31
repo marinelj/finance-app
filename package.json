@@ -69,6 +69,7 @@
     "start:dev": "expo start --dev-client",
     "android": "expo start --go --android",
     "ios": "expo start --go --ios",
+    "web": "expo start --web",
     "lint": "expo lint",
     "typecheck": "tsc --noEmit",
     "test": "jest",
