@@ -15,6 +15,8 @@ type StatusColors = {
   text: string;
   /** Tinted background for badges and banners. */
   soft: string;
+  /** `soft` under a mouse pointer. */
+  softHover: string;
 };
 
 export type ThemeColors = {
@@ -31,6 +33,8 @@ export type ThemeColors = {
   primary: string;
   primaryPressed: string;
   primarySoft: string;
+  /** `primarySoft` under a mouse pointer. */
+  primarySoftHover: string;
   /** Primary hue when it is used as text or an icon on a light surface. */
   primaryText: string;
   heroGradient: readonly [string, string];
@@ -63,6 +67,7 @@ export const lightColors: ThemeColors = {
   primary: '#6C4DFF',
   primaryPressed: '#5A3BEE',
   primarySoft: '#EEEAFF',
+  primarySoftHover: '#E2DBFF',
   primaryText: '#5A3BEE',
   heroGradient: ['#5B3DF5', '#D6247F'],
   accent: {
@@ -87,9 +92,9 @@ export const lightColors: ThemeColors = {
     sky: '#1565C0',
   },
   status: {
-    good: { mark: '#0CA30C', text: '#006300', soft: '#E6F6E6' },
-    caution: { mark: '#FAB219', text: '#8A5200', soft: '#FFF4DB' },
-    danger: { mark: '#D03B3B', text: '#B42318', soft: '#FCE8E8' },
+    good: { mark: '#0CA30C', text: '#006300', soft: '#E6F6E6', softHover: '#D6EFD6' },
+    caution: { mark: '#FAB219', text: '#8A5200', soft: '#FFF4DB', softHover: '#FFEBC0' },
+    danger: { mark: '#D03B3B', text: '#B42318', soft: '#FCE8E8', softHover: '#F8D9D9' },
   },
   chart: {
     series: ['#2A78D6', '#EB6834', '#1BAF7A', '#EDA100', '#E87BA4'],

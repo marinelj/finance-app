@@ -1,9 +1,18 @@
-import type { ReactNode } from 'react';
-import { ScrollView, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
+import { useScrollToTop } from 'expo-router';
+import { useRef, type ReactNode } from 'react';
+import {
+  ScrollView,
+  StyleSheet,
+  View,
+  type ScrollViewInstance,
+  type StyleProp,
+  type ViewStyle,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useStyles } from '@/design/theme';
 import type { Theme } from '@/design/tokens';
+import { CONTENT_MAX_WIDTH } from '@/lib/platform';
 
 import { TAB_BAR_HEIGHT } from './TabBar';
 import { Text } from './Text';
@@ -22,7 +31,10 @@ type ScreenProps = {
   contentStyle?: StyleProp<ViewStyle>;
 };
 
-/** Scrollable page with the app's large-title header and consistent gutters. */
+/**
+ * Scrollable page with the app's large-title header and consistent gutters. Tapping the active
+ * tab scrolls it back to the top; on wide screens the content is centred at a readable width.
+ */
 export function Screen({
   title,
   eyebrow,
@@ -35,10 +47,13 @@ export function Screen({
   const insets = useSafeAreaInsets();
   const styles = useStyles(makeStyles);
   const bottom = (withTabBar ? TAB_BAR_HEIGHT + 24 : 0) + insets.bottom + 24;
+  const scrollRef = useRef<ScrollViewInstance>(null);
+  useScrollToTop(scrollRef);
 
   return (
     <View style={styles.page}>
       <ScrollView
+        ref={scrollRef}
         contentInsetAdjustmentBehavior="never"
         contentContainerStyle={[
           styles.content,
@@ -69,7 +84,13 @@ export function Screen({
 const makeStyles = ({ colors, space }: Theme) =>
   StyleSheet.create({
     page: { flex: 1, backgroundColor: colors.background },
-    content: { paddingHorizontal: space.xl, gap: space.lg },
+    content: {
+      paddingHorizontal: space.xl,
+      gap: space.lg,
+      width: '100%',
+      maxWidth: CONTENT_MAX_WIDTH,
+      alignSelf: 'center',
+    },
     header: { flexDirection: 'row', alignItems: 'flex-end', gap: space.md, marginBottom: space.xs },
     titles: { flex: 1, gap: 2 },
   });

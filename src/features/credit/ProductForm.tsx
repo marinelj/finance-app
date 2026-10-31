@@ -16,7 +16,7 @@ import { TextField } from '@/components/form/TextField';
 import { SegmentedControl } from '@/components/SegmentedControl';
 import { Text } from '@/components/Text';
 import { useStyles } from '@/design/theme';
-import type { Theme } from '@/design/tokens';
+import { space, type Theme } from '@/design/tokens';
 import { saveProduct } from '@/db/credit';
 import {
   aprPercent,
@@ -44,6 +44,7 @@ import type { Translation } from '@/i18n/locales/en';
 import { formatDate } from '@/lib/format';
 import { haptics } from '@/lib/haptics';
 import { usePreferences } from '@/state/preferences';
+import { CONTENT_MAX_WIDTH, useCenteredGutter } from '@/lib/platform';
 
 import { ColorPicker, EmojiPicker } from './AppearancePickers';
 import { dayValueLabel } from './labels';
@@ -78,6 +79,7 @@ export function ProductForm({
   const { t } = useTranslation();
   const styles = useStyles(makeStyles);
   const insets = useSafeAreaInsets();
+  const gutter = useCenteredGutter(space.xl);
   const { language } = usePreferences();
   const form = useForm(initialValues, validateProductForm);
   const { values, set, errors } = form;
@@ -442,7 +444,8 @@ export function ProductForm({
         </Appear>
       </ScrollView>
 
-      <View style={[styles.footer, { paddingBottom: insets.bottom + 12 }]}>
+      <View
+        style={[styles.footer, { paddingBottom: insets.bottom + 12, paddingHorizontal: gutter }]}>
         {form.submitted && !form.isValid ? (
           <Text variant="caption" tone="danger" align="center" accessibilityLiveRegion="polite">
             {t('form.fixErrors')}
@@ -476,7 +479,14 @@ export function ProductForm({
 const makeStyles = ({ colors, space }: Theme) =>
   StyleSheet.create({
     flex: { flex: 1, backgroundColor: colors.background },
-    content: { padding: space.xl, gap: space.lg, paddingBottom: space.huge },
+    content: {
+      padding: space.xl,
+      gap: space.lg,
+      paddingBottom: space.huge,
+      width: '100%',
+      maxWidth: CONTENT_MAX_WIDTH,
+      alignSelf: 'center',
+    },
     group: { gap: space.sm },
     footer: {
       gap: space.sm,

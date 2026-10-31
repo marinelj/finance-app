@@ -113,12 +113,26 @@ npx expo run:ios
 npx expo run:android
 ```
 
+### In a browser
+
+```bash
+npm run web
+```
+
+This opens the app in your browser at http://localhost:8081, with your data kept in that browser
+(SQLite in WebAssembly). It works with the mouse and keyboard: hover states, a focus ring for
+Tab navigation, ← / → on the card deck, Escape to close dialogs, and a centred layout on wide
+windows. The dev server sends the cross-origin isolation headers SQLite needs; if you host a web
+export yourself, your server must send `Cross-Origin-Opener-Policy: same-origin` and
+`Cross-Origin-Embedder-Policy: credentialless` (or `require-corp`) too.
+
 ## Scripts
 
 | Command               | What it does                                       |
 | --------------------- | -------------------------------------------------- |
 | `npm start`           | Dev server for Expo Go                             |
 | `npm run start:dev`   | Dev server for a development build                 |
+| `npm run web`         | Dev server that opens the app in a browser         |
 | `npm test`            | Jest unit tests                                    |
 | `npm run lint`        | ESLint with Prettier formatting rules              |
 | `npm run typecheck`   | TypeScript in strict mode                          |

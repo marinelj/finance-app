@@ -2,6 +2,7 @@ import { ActivityIndicator, StyleSheet, View, type StyleProp, type ViewStyle } f
 
 import { useStyles, useTheme } from '@/design/theme';
 import type { Theme } from '@/design/tokens';
+import { useHover } from '@/hooks/useHover';
 import type { HapticKind } from '@/lib/haptics';
 
 import { Icon, type IconName } from './Icon';
@@ -31,15 +32,31 @@ function colorsFor(theme: Theme, variant: Variant) {
   const { colors } = theme;
   switch (variant) {
     case 'secondary':
-      return { background: colors.primarySoft, foreground: colors.primaryText };
+      return {
+        background: colors.primarySoft,
+        hover: colors.primarySoftHover,
+        foreground: colors.primaryText,
+      };
     case 'ghost':
-      return { background: 'transparent', foreground: colors.primaryText };
+      return {
+        background: 'transparent',
+        hover: colors.primarySoft,
+        foreground: colors.primaryText,
+      };
     case 'danger':
-      return { background: colors.status.danger.soft, foreground: colors.status.danger.text };
+      return {
+        background: colors.status.danger.soft,
+        hover: colors.status.danger.softHover,
+        foreground: colors.status.danger.text,
+      };
     case 'dark':
-      return { background: colors.text, foreground: colors.surface };
+      return { background: colors.text, hover: colors.textSecondary, foreground: colors.surface };
     default:
-      return { background: colors.primary, foreground: colors.textOnPrimary };
+      return {
+        background: colors.primary,
+        hover: colors.primaryPressed,
+        foreground: colors.textOnPrimary,
+      };
   }
 }
 
@@ -58,8 +75,9 @@ export function Button({
 }: ButtonProps) {
   const theme = useTheme();
   const styles = useStyles(makeStyles);
-  const { background, foreground } = colorsFor(theme, variant);
+  const { background, hover, foreground } = colorsFor(theme, variant);
   const inactive = disabled || loading;
+  const { hovered, hoverProps } = useHover();
 
   return (
     <PressableScale
@@ -70,10 +88,11 @@ export function Button({
       disabled={inactive}
       haptic={haptic}
       onPress={onPress}
+      {...hoverProps}
       hitSlop={size === 'sm' ? 6 : 0}
       style={[
         styles.base,
-        { minHeight: HEIGHT[size], backgroundColor: background },
+        { minHeight: HEIGHT[size], backgroundColor: hovered && !inactive ? hover : background },
         size === 'sm' ? styles.small : styles.regular,
         fullWidth && styles.fullWidth,
         inactive && !loading && styles.disabled,
