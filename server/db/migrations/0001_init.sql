@@ -128,7 +128,7 @@ CREATE TABLE IF NOT EXISTS installments (
   principal   numeric(18,2) NOT NULL,
   interest    numeric(18,2) NOT NULL,
   amount      numeric(18,2) NOT NULL,
-  paid_at     timestamptz
+  paid_at     date
 );
 CREATE INDEX IF NOT EXISTS installments_product_idx ON installments (product_id, due_date);
 
