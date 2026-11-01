@@ -27,9 +27,14 @@ psql "host=$DB_HOST port=$DB_PORT user=$admin dbname=${PGADMIN_DB:-postgres} ssl
   -f "$here/setup.sql"
 
 echo "2/2 Creating tables as '$DB_USER'..."
-PGPASSWORD="$DB_PASSWORD" psql \
-  "host=$DB_HOST port=$DB_PORT user=$DB_USER dbname=$DB_NAME sslmode=$sslmode" \
-  -v ON_ERROR_STOP=1 -f "$here/schema.sql"
+for file in "$here"/migrations/*.sql; do
+  version="$(basename "$file" .sql)"
+  echo "  $version"
+  PGPASSWORD="$DB_PASSWORD" psql -q \
+    "host=$DB_HOST port=$DB_PORT user=$DB_USER dbname=$DB_NAME sslmode=$sslmode" \
+    -v ON_ERROR_STOP=1 -f "$file" \
+    -c "INSERT INTO schema_migrations (version) VALUES ('$version') ON CONFLICT DO NOTHING"
+done
 
 echo "Done. Tables in $DB_NAME:"
 PGPASSWORD="$DB_PASSWORD" psql \

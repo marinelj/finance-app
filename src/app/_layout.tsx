@@ -64,6 +64,7 @@ function Navigation() {
         <Stack.Screen name="settings/fx" options={{ title: t('fx.title') }} />
         <Stack.Screen name="settings/types" options={{ title: t('settings.productTypes') }} />
         <Stack.Screen name="settings/backup" options={{ title: t('backup.title') }} />
+        <Stack.Screen name="settings/sync" options={{ title: t('sync.title') }} />
         <Stack.Screen name="design-system" options={{ title: t('settings.designSystem') }} />
       </Stack>
       <ReminderSync />

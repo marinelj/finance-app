@@ -274,6 +274,13 @@ export default function SettingsScreen() {
             subtitle={t('security.backupHint')}
             onPress={() => router.push('/settings/backup')}
           />
+          <ListRow
+            icon="server-outline"
+            tone="mint"
+            title={t('security.sync')}
+            subtitle={t('security.syncHint')}
+            onPress={() => router.push('/settings/sync')}
+          />
         </Card>
       </Appear>
 
