@@ -59,3 +59,4 @@ GoogleService-Info.plist
 *.sqlite
 *.fabackup
 finance-backup*.json
+!.env.example
