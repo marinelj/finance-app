@@ -9,6 +9,7 @@ import {
   verifyPassword,
 } from './auth.js';
 import { transaction } from './db.js';
+import { createCodexProxy } from './codex-proxy.js';
 import {
   currentRevision,
   loadColumns,
@@ -56,6 +57,7 @@ const BAD_DATA_CODES = new Set([
 /** Builds the request handler. Kept separate from listen() so tests can call it directly. */
 export function createApp({ pool, config, log = console }) {
   const throttle = new Throttle();
+  const codexProxy = createCodexProxy(config.codexUpstream);
   let columnsPromise;
   const columns = () => (columnsPromise ??= loadColumns(pool));
 
@@ -222,7 +224,7 @@ export function createApp({ pool, config, log = console }) {
     if (!origin || !config.corsOrigins.includes(origin)) return;
     res.setHeader('Access-Control-Allow-Origin', origin);
     res.setHeader('Vary', 'Origin');
-    res.setHeader('Access-Control-Allow-Headers', 'Authorization, Content-Type');
+    res.setHeader('Access-Control-Allow-Headers', 'Authorization, Content-Type, Idempotency-Key');
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, OPTIONS');
     res.setHeader('Access-Control-Max-Age', '600');
     // Chrome asks before a public site (github.io) calls a private address; say yes for the
@@ -249,6 +251,7 @@ export function createApp({ pool, config, log = console }) {
       res.end();
       return;
     }
+    if (codexProxy?.(req, res)) return;
     const path = new URL(req.url ?? '/', 'http://localhost').pathname.replace(/\/+$/, '') || '/';
     const route = routes[`${req.method} ${path}`];
     try {

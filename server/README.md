@@ -100,6 +100,20 @@ The same `https://` address also works in the phone apps, including release Andr
 which block plain `http://` too. Expo Go and development builds can keep using
 `http://192.168.x.x:8787` on your Wi-Fi.
 
+### Codex gateway on the same API port
+
+An independent [Codex HTTP Gateway](https://github.com/marinelj/codex-http-gateway)
+can share this server's published port under `/codex`. Start the gateway with
+`GATEWAY_HOST=127.0.0.1 GATEWAY_PORT=18080 GATEWAY_ROOT_PATH=/codex`, then add
+`CODEX_UPSTREAM=http://127.0.0.1:18080` to `server/.env` and restart this server.
+The upstream must be a loopback HTTP origin; no external proxy targets are accepted.
+
+Clients call `/codex/v1/runs` and `/codex/v1/threads/{thread_id}` using the gateway's
+own bearer token. Finance tokens do not grant Codex access. The proxy forwards client
+authentication and idempotency headers, streams responses, and preserves gateway
+status codes. Existing `/api/*` and `/health` endpoints keep their current behavior.
+If the gateway is down, only `/codex/*` requests return `502`.
+
 ### Tests
 
 ```bash
