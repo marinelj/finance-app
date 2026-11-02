@@ -31,6 +31,8 @@ export function loadConfig(env = process.env) {
     },
     host: env.API_HOST ?? '0.0.0.0',
     port: Number(env.API_PORT ?? 8787),
+    /** Optional independent Codex gateway, mounted at /codex on this API port. */
+    codexUpstream: env.CODEX_UPSTREAM || undefined,
     /** "first" lets only the first account sign up; "open" lets anyone; "closed" lets nobody. */
     signup: ['first', 'open', 'closed'].includes(env.SIGNUP) ? env.SIGNUP : 'first',
     /** Browser origins allowed to call the API (the phone apps don't need this). */
