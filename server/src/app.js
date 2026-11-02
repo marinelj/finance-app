@@ -193,6 +193,11 @@ export function createApp({ pool, config, log = console }) {
     res.setHeader('Access-Control-Allow-Headers', 'Authorization, Content-Type');
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, OPTIONS');
     res.setHeader('Access-Control-Max-Age', '600');
+    // Chrome asks before a public site (github.io) calls a private address; say yes for the
+    // origins listed above.
+    if (req.headers['access-control-request-private-network'] === 'true') {
+      res.setHeader('Access-Control-Allow-Private-Network', 'true');
+    }
   }
 
   function send(res, status, body) {

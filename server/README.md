@@ -63,12 +63,36 @@ phones.
 
 Passwords are hashed with scrypt; tokens are random and only their SHA-256 is stored.
 
-### Reaching the server from a phone
+### Using it from the github.io site
 
-- **Expo Go / development builds** can call `http://192.168.1.5:8787` directly.
-- **Release Android builds** block plain `http://` by default, and the **web build on GitHub
-  Pages** (an `https://` page) can't call an `http://` server. For those, put the API behind
-  HTTPS (for example a reverse proxy with a certificate) and use that `https://` address.
+The web app stays on GitHub Pages (`https://marinelj.github.io/finance-app/`). Only the
+personal data goes to the server on your Mac Studio. Because the page is `https://`, the
+browser blocks it from calling a plain `http://192.168.x.x` address, so the server needs an
+`https://` address of its own. The app says so if you enter an `http://` address on the site.
+
+The simplest way is **Tailscale**, which gives the Mac Studio a private `https://` address that
+only your own devices can reach, at home or away:
+
+1. Install Tailscale on the Mac Studio and on each phone or computer you'll use, and sign in
+   to the same account on all of them.
+2. In the Tailscale admin console, under **DNS**, turn on **MagicDNS** and **HTTPS
+   Certificates**.
+3. On the Mac Studio, start the API (`npm start` in `server/`), then run:
+
+   ```bash
+   tailscale serve --bg 8787
+   ```
+
+   It prints the address, like `https://mac-studio.your-tailnet.ts.net`.
+
+4. In `server/.env`, keep `CORS_ORIGINS=https://marinelj.github.io` (scheme and host only, no
+   `/finance-app` path). To accept connections only through Tailscale, also set
+   `API_HOST=127.0.0.1`.
+5. On the github.io site, open **Me → Server sync** and enter that `https://…ts.net` address.
+
+The same `https://` address also works in the phone apps, including release Android builds,
+which block plain `http://` too. Expo Go and development builds can keep using
+`http://192.168.x.x:8787` on your Wi-Fi.
 
 ### Tests
 

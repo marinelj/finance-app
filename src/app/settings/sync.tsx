@@ -26,6 +26,9 @@ import { createSyncClient, SyncError } from '@/lib/sync/client';
 import { reloadPreferences } from '@/state/preferences';
 import { useToast } from '@/state/toast';
 
+/** The github.io build: only https servers can be reached from it. */
+const isHttpsPage = process.env.EXPO_OS === 'web' && globalThis.location?.protocol === 'https:';
+
 type Busy = 'signIn' | 'signUp' | 'upload' | 'download' | 'signOut' | null;
 
 /** Signs in to the user's own Finance server and copies data up to it or down from it. */
@@ -242,8 +245,8 @@ export default function SyncScreen() {
             label={t('sync.serverUrl')}
             value={serverUrl}
             onChangeText={setServerUrl}
-            placeholder="192.168.1.5:8787"
-            hint={t('sync.serverUrlHint')}
+            placeholder={isHttpsPage ? 'https://' : '192.168.1.5:8787'}
+            hint={t(isHttpsPage ? 'sync.serverUrlHintWeb' : 'sync.serverUrlHint')}
             keyboardType="url"
             plain
           />

@@ -813,6 +813,8 @@ const en = {
     signInTitle: 'Sign in to your server',
     serverUrl: 'Server address',
     serverUrlHint: 'The computer running the Finance server, e.g. 192.168.1.5:8787',
+    serverUrlHintWeb:
+      'Your Finance server’s https address, e.g. https://mac-studio.your-tailnet.ts.net',
     email: 'Email',
     password: 'Password',
     passwordHint: 'At least 8 characters. This is your server account, not the database password.',
@@ -835,6 +837,8 @@ const en = {
     signOut: 'Sign out',
     errors: {
       badUrl: 'That doesn’t look like a server address.',
+      needsHttps:
+        'This web page is served over https, so the browser blocks plain http addresses. Use your server’s https address.',
       network:
         'Can’t reach the server. Check the address and that this phone is on the same network.',
       wrongCredentials: 'Wrong email or password.',
