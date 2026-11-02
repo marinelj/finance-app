@@ -10,6 +10,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { ThemeProvider, useTheme } from '@/design/theme';
 import { NotificationResponder, ReminderSync } from '@/features/credit/ReminderSync';
+import { ServerSync } from '@/state/serverSync';
 import { configureNotifications, notificationsSupported } from '@/lib/notifications';
 import { CreditDataProvider } from '@/state/creditData';
 import { AppLockGate } from '@/state/appLock';
@@ -68,6 +69,7 @@ function Navigation() {
         <Stack.Screen name="design-system" options={{ title: t('settings.designSystem') }} />
       </Stack>
       <ReminderSync />
+      <ServerSync />
       {notificationsSupported ? <NotificationResponder /> : null}
     </NavigationThemeProvider>
   );

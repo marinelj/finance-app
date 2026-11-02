@@ -14,6 +14,7 @@ export type SyncErrorCode =
   | 'signedOut'
   | 'invalid'
   | 'conflict'
+  | 'stale'
   | 'tooLarge'
   | 'server';
 
@@ -59,6 +60,7 @@ const CODES: Record<string, SyncErrorCode> = {
   invalid: 'invalid',
   invalid_json: 'invalid',
   conflict: 'conflict',
+  stale: 'stale',
   too_large: 'tooLarge',
 };
 
@@ -139,15 +141,29 @@ export function createSyncClient(
       request<Session>('POST', '/api/auth/signup', { body: { email, password, device } }),
     signOut: (token: string) => request<{ ok: true }>('POST', '/api/auth/logout', { token }),
     me: (token: string) =>
-      request<{ user: SyncUser; lastUpload: string | null }>('GET', '/api/me', { token }),
-    upload: (token: string, payload: unknown) =>
-      request<{ ok: true; rows: number }>('PUT', '/api/sync', {
+      request<{ user: SyncUser; lastUpload: string | null; revision: number }>('GET', '/api/me', {
         token,
-        body: payload,
+      }),
+    /** The server's revision: 0 before anything was saved, then up by one per save. */
+    revision: (token: string) =>
+      request<{ revision: number }>('GET', '/api/sync/revision', { token }).then(
+        (body) => body.revision
+      ),
+    /**
+     * Replaces the server's copy. With `baseRevision`, fails with SyncError('stale') when the
+     * server changed since that revision; without it, overwrites whatever is there.
+     */
+    upload: (token: string, payload: object, baseRevision?: number) =>
+      request<{ ok: true; rows: number; revision: number }>('PUT', '/api/sync', {
+        token,
+        body: baseRevision === undefined ? payload : { ...payload, baseRevision },
         timeoutMs: 120_000,
       }),
     download: (token: string) =>
-      request<unknown>('GET', '/api/sync', { token, timeoutMs: 120_000 }),
+      request<{ revision: number } & Record<string, unknown>>('GET', '/api/sync', {
+        token,
+        timeoutMs: 120_000,
+      }),
   };
 }
 

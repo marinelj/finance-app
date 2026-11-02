@@ -9,13 +9,28 @@ import {
   verifyPassword,
 } from './auth.js';
 import { transaction } from './db.js';
-import { loadColumns, payloadSchema, readSnapshot, replaceSnapshot, SyncError } from './sync.js';
+import {
+  currentRevision,
+  loadColumns,
+  payloadSchema,
+  readSnapshot,
+  replaceSnapshot,
+  SyncError,
+} from './sync.js';
 
 class HttpError extends Error {
   constructor(status, code, message) {
     super(message ?? code);
     this.status = status;
     this.code = code;
+  }
+}
+
+/** The server changed since the device last synced. */
+class StaleError extends Error {
+  constructor(revision) {
+    super('stale');
+    this.revision = revision;
   }
 }
 
@@ -153,13 +168,15 @@ export function createApp({ pool, config, log = console }) {
     'GET /api/me': async (req) => {
       const { userId } = await authenticate(req);
       const { rows } = await pool.query(
-        `SELECT u.id, u.email, u.display_name, s.exported_at, s.updated_at AS synced_at
+        `SELECT u.id, u.email, u.display_name, s.exported_at, s.updated_at AS synced_at,
+                COALESCE(s.revision, 0) AS revision
            FROM users u LEFT JOIN sync_state s ON s.user_id = u.id WHERE u.id = $1`,
         [userId]
       );
       return {
         user: userView(rows[0]),
         lastUpload: rows[0].synced_at ?? null,
+        revision: rows[0].revision,
       };
     },
 
@@ -172,16 +189,31 @@ export function createApp({ pool, config, log = console }) {
       });
     },
 
+    'GET /api/sync/revision': async (req) => {
+      const { userId } = await authenticate(req);
+      return { revision: await currentRevision(pool, userId) };
+    },
+
     'PUT /api/sync': async (req) => {
       const { userId } = await authenticate(req);
-      const payload = parse(payloadSchema, await readJson(req));
+      const body = await readJson(req);
+      const payload = parse(payloadSchema, body);
+      // When given, the upload only applies if nobody else uploaded since that revision.
+      const base = body?.baseRevision;
+      if (base !== undefined && base !== null && !Number.isInteger(base)) {
+        throw new HttpError(400, 'invalid', 'baseRevision must be an integer');
+      }
       const cols = await columns();
-      const count = await transaction(pool, async (client) => {
+      const result = await transaction(pool, async (client) => {
         // One upload at a time per user.
         await client.query('SELECT pg_advisory_xact_lock(hashtext($1))', [userId]);
+        if (base !== undefined && base !== null) {
+          const revision = await currentRevision(client, userId);
+          if (revision !== base) throw new StaleError(revision);
+        }
         return replaceSnapshot(client, cols, userId, payload);
       });
-      return { ok: true, rows: count };
+      return { ok: true, rows: result.count, revision: result.revision };
     },
   };
 
@@ -228,7 +260,13 @@ export function createApp({ pool, config, log = console }) {
         send(res, 200, result);
       }
     } catch (error) {
-      if (error instanceof HttpError) {
+      if (error instanceof StaleError) {
+        send(res, 409, {
+          error: 'stale',
+          message: 'The data on the server changed since this device last synced.',
+          revision: error.revision,
+        });
+      } else if (error instanceof HttpError) {
         // The rest of an oversized body is still on the socket: don't reuse the connection.
         if (error.status === 413) res.setHeader('Connection', 'close');
         send(res, error.status, { error: error.code, message: error.message });
