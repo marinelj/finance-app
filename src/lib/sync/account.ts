@@ -5,7 +5,17 @@ import * as SecureStore from 'expo-secure-store';
  * build has no keychain, so it keeps them in this browser's local storage.
  */
 
-export type SyncAccount = { serverUrl: string; token: string; email: string };
+export type SyncAccount = {
+  serverUrl: string;
+  token: string;
+  email: string;
+  /** Server revision this device last matched, or null before the first sync. */
+  revision: number | null;
+  /** Fingerprint of this device's data at that revision, to tell whether it changed since. */
+  syncedHash: string | null;
+  /** When this device last matched the server, ISO 8601. */
+  lastSyncedAt: string | null;
+};
 
 const KEY = 'server-sync';
 const isWeb = process.env.EXPO_OS === 'web';
@@ -15,7 +25,14 @@ function parse(stored: string | null): SyncAccount | null {
   try {
     const value = JSON.parse(stored) as Partial<SyncAccount>;
     if (typeof value.serverUrl !== 'string' || typeof value.token !== 'string') return null;
-    return { serverUrl: value.serverUrl, token: value.token, email: value.email ?? '' };
+    return {
+      serverUrl: value.serverUrl,
+      token: value.token,
+      email: value.email ?? '',
+      revision: typeof value.revision === 'number' ? value.revision : null,
+      syncedHash: typeof value.syncedHash === 'string' ? value.syncedHash : null,
+      lastSyncedAt: typeof value.lastSyncedAt === 'string' ? value.lastSyncedAt : null,
+    };
   } catch {
     return null;
   }

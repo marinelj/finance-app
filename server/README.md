@@ -46,8 +46,14 @@ Then in the app: **Me → Server sync**, enter the server address (for example
 Only the first account can sign up (`SIGNUP=first`); after that, sign in with it on other
 phones.
 
-- **Upload this phone's data** replaces your data on the server with what's on the phone.
-- **Download to this phone** replaces everything on the phone with the server's copy.
+Once signed in, the server holds your data and each device keeps a working copy:
+
+- Every change saves to the server automatically, a moment after you make it.
+- When the app opens, comes back to the foreground, or a minute passes, it checks the server
+  and loads changes saved by your other devices.
+- Offline, the app keeps working and saves when the connection is back.
+- If two devices changed data before syncing, sync pauses and **Me → Server sync** asks which
+  copy to keep.
 
 ### Endpoints
 

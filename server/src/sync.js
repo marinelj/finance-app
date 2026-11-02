@@ -77,13 +77,14 @@ export async function readSnapshot(client, columns, userId) {
     [userId, SETTING_KEYS]
   );
   const { rows: state } = await client.query(
-    'SELECT app_schema, exported_at FROM sync_state WHERE user_id = $1',
+    'SELECT app_schema, exported_at, revision FROM sync_state WHERE user_id = $1',
     [userId]
   );
   return {
     app: 'finance-app',
     schema: state[0]?.app_schema ?? 1,
     exportedAt: state[0]?.exported_at ?? new Date(0).toISOString(),
+    revision: state[0]?.revision ?? 0,
     tables,
     settings: Object.fromEntries(settingRows.map((row) => [row.key, row.value])),
   };
@@ -141,7 +142,18 @@ export class SyncError extends Error {
   }
 }
 
-/** Replaces all of the user's data with the payload. Call inside a transaction. */
+/** The user's current revision: 0 before the first upload, then 1, 2, 3… */
+export async function currentRevision(client, userId) {
+  const { rows } = await client.query('SELECT revision FROM sync_state WHERE user_id = $1', [
+    userId,
+  ]);
+  return rows[0]?.revision ?? 0;
+}
+
+/**
+ * Replaces all of the user's data with the payload. Call inside a transaction. Returns the
+ * number of rows stored and the new revision.
+ */
 export async function replaceSnapshot(client, columns, userId, payload) {
   // Children go with their products (ON DELETE CASCADE).
   for (const table of [...SYNC_TABLES].reverse()) {
@@ -176,11 +188,13 @@ export async function replaceSnapshot(client, columns, userId, payload) {
     ]);
   }
 
-  await client.query(
-    `INSERT INTO sync_state (user_id, app_schema, exported_at) VALUES ($1, $2, $3)
+  const { rows: state } = await client.query(
+    `INSERT INTO sync_state (user_id, app_schema, exported_at, revision) VALUES ($1, $2, $3, 1)
      ON CONFLICT (user_id) DO UPDATE
-       SET app_schema = EXCLUDED.app_schema, exported_at = EXCLUDED.exported_at, updated_at = now()`,
+       SET app_schema = EXCLUDED.app_schema, exported_at = EXCLUDED.exported_at,
+           revision = sync_state.revision + 1, updated_at = now()
+     RETURNING revision`,
     [userId, payload.schema, payload.exportedAt]
   );
-  return count;
+  return { count, revision: state[0].revision };
 }

@@ -809,7 +809,9 @@ const en = {
   sync: {
     title: 'Server sync',
     intro:
-      'Copy your data to your own Finance server and back. The server keeps it in your PostgreSQL database; this phone only stores the server address and a sign-in token.',
+      'Keep your data on your own Finance server. Once you sign in, every change saves there automatically and shows up on your other devices. This device only stores the server address and a sign-in token.',
+    introSignedIn:
+      'Every change saves to your server automatically, and changes from your other devices load on their own. Without a connection the app keeps working and catches up later.',
     signInTitle: 'Sign in to your server',
     serverUrl: 'Server address',
     serverUrlHint: 'The computer running the Finance server, e.g. 192.168.1.5:8787',
@@ -822,25 +824,31 @@ const en = {
     signUp: 'Create account',
     signedIn: 'Signed in as {{email}}',
     account: 'Your server account',
-    lastUpload: 'Last upload {{date}}',
-    neverUploaded: 'Nothing uploaded yet',
-    upload: 'Upload this phone’s data',
-    uploadConfirmTitle: 'Replace the data on the server?',
-    uploadConfirmMessage:
-      'The server’s copy will be replaced by what’s on this phone. Other phones keep their own data until they download.',
-    uploaded_one: 'Uploaded {{count}} item',
-    uploaded_other: 'Uploaded {{count}} items',
-    download: 'Download to this phone',
-    downloadHint: 'Downloading replaces everything on this phone with the server’s copy.',
-    downloadConfirmMessage:
-      'Everything on this phone will be replaced by the copy on your server. This can’t be undone.',
+    status: {
+      off: 'Not syncing',
+      syncing: 'Syncing…',
+      synced: 'Saved to your server · {{time}}',
+      offline: 'Offline. Changes are kept on this device and will save when you’re back online.',
+      conflict: 'Sync paused: choose which data to keep below.',
+    },
+    retry: 'Try again',
+    conflictTitle: 'Two versions of your data',
+    conflictMessage:
+      'This device and your server were both changed since they last synced. Choose which one to keep; the other will be replaced.',
+    keepServer: 'Use the server’s data',
+    keepDevice: 'Use this device’s data',
+    keepServerTitle: 'Replace this device’s data?',
+    keepServerMessage:
+      'Everything on this device will be replaced by the copy on your server. This can’t be undone.',
+    keepDeviceTitle: 'Replace the server’s data?',
+    keepDeviceMessage:
+      'The copy on your server will be replaced by what’s on this device. Changes made on other devices since the last sync will be lost.',
     signOut: 'Sign out',
     errors: {
       badUrl: 'That doesn’t look like a server address.',
       needsHttps:
         'This web page is served over https, so the browser blocks plain http addresses. Use your server’s https address.',
-      network:
-        'Can’t reach the server. Check the address and that this phone is on the same network.',
+      network: 'Can’t reach the server. Check the address and your connection.',
       wrongCredentials: 'Wrong email or password.',
       signupClosed: 'This server isn’t accepting new accounts.',
       emailTaken: 'There’s already an account with this email. Sign in instead.',
@@ -848,7 +856,8 @@ const en = {
       signedOut: 'You’ve been signed out. Sign in again.',
       invalid: 'The server couldn’t accept this data.',
       conflict: 'Some items already belong to another account on this server.',
-      tooLarge: 'This upload is bigger than the server allows.',
+      stale: 'The server changed since this device last synced.',
+      tooLarge: 'Your data is bigger than the server allows.',
       server: 'The server ran into a problem. Try again later.',
     },
   },
@@ -871,7 +880,7 @@ const en = {
     backup: 'Backup and restore',
     backupHint: 'An encrypted file you keep, for moving phones',
     sync: 'Server sync',
-    syncHint: 'Upload to or download from your own server',
+    syncHint: 'Save your data to your own server automatically',
   },
   settings: {
     title: 'Me',

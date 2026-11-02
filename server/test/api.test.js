@@ -281,6 +281,34 @@ describe('API', { skip: !url && 'TEST_DATABASE_URL is not set' }, () => {
     assert.equal(no.headers.get('access-control-allow-origin'), null);
   });
 
+  it('counts revisions and refuses uploads based on an old one', async () => {
+    const start = (await call('GET', '/api/sync/revision', { token })).body.revision;
+    assert.ok(start >= 1);
+
+    const ok = await call('PUT', '/api/sync', {
+      body: { ...payload(), baseRevision: start },
+      token,
+    });
+    assert.equal(ok.status, 200, JSON.stringify(ok.body));
+    assert.equal(ok.body.revision, start + 1);
+
+    const stale = await call('PUT', '/api/sync', {
+      body: { ...payload({ tables: { stock_holdings: [] } }), baseRevision: start },
+      token,
+    });
+    assert.equal(stale.status, 409);
+    assert.equal(stale.body.error, 'stale');
+    assert.equal(stale.body.revision, start + 1);
+
+    const got = await call('GET', '/api/sync', { token });
+    assert.equal(got.body.revision, start + 1);
+    assert.equal(got.body.tables.stock_holdings.length, 1, 'stale upload must not apply');
+
+    const forced = await call('PUT', '/api/sync', { body: payload(), token });
+    assert.equal(forced.body.revision, start + 2);
+    assert.equal((await call('GET', '/api/me', { token })).body.revision, start + 2);
+  });
+
   it('signs out', async () => {
     assert.equal((await call('POST', '/api/auth/logout', { token })).status, 200);
     assert.equal((await call('GET', '/api/me', { token })).status, 401);
