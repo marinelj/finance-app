@@ -7,6 +7,6 @@ module.exports = defineConfig([
   expoConfig,
   eslintPluginPrettierRecommended,
   {
-    ignores: ['dist/*', '.expo/*', 'coverage/*', 'drizzle/*'],
+    ignores: ['dist/*', '.expo/*', 'coverage/*', 'drizzle/*', 'server/node_modules/*'],
   },
 ]);

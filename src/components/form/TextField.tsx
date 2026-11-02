@@ -33,6 +33,8 @@ export type TextFieldProps = {
   autoFocus?: boolean;
   /** Passwords and passphrases: hidden, no autocorrect or capitalisation. */
   secure?: boolean;
+  /** Emails, URLs and other typed identifiers: no autocorrect or capitalisation. */
+  plain?: boolean;
   style?: StyleProp<ViewStyle>;
 };
 
@@ -53,6 +55,7 @@ export function TextField({
   maxLength,
   autoFocus,
   secure,
+  plain,
   style,
 }: TextFieldProps) {
   const { colors } = useTheme();
@@ -85,8 +88,8 @@ export function TextField({
           maxLength={maxLength}
           autoFocus={autoFocus}
           secureTextEntry={secure}
-          autoCapitalize={secure ? 'none' : undefined}
-          autoCorrect={secure ? false : undefined}
+          autoCapitalize={secure || plain ? 'none' : undefined}
+          autoCorrect={secure || plain ? false : undefined}
           textContentType={secure ? 'password' : undefined}
           maxFontSizeMultiplier={2}
           accessibilityLabel={label}
