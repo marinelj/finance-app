@@ -5,6 +5,7 @@
 
 export type SyncErrorCode =
   | 'badUrl'
+  | 'needsHttps'
   | 'network'
   | 'wrongCredentials'
   | 'signupClosed'
@@ -73,8 +74,28 @@ export function errorFromResponse(status: number, body: unknown): SyncError {
   return new SyncError('server', message ?? `HTTP ${status}`);
 }
 
-export function createSyncClient(baseUrl: string, fetchImpl: Fetch = fetch) {
+const LOOPBACK = /^(localhost|127(?:\.\d+){3}|\[::1\])$/;
+
+/**
+ * An https page (the github.io site) can't call a plain-http server: the browser blocks it as
+ * mixed content. Only loopback addresses are exempt. `pageProtocol` is the page's own protocol,
+ * or undefined outside a browser.
+ */
+export function blockedAsMixedContent(serverUrl: string, pageProtocol: string | undefined) {
+  if (pageProtocol !== 'https:') return false;
+  const url = new URL(serverUrl);
+  return url.protocol === 'http:' && !LOOPBACK.test(url.hostname);
+}
+
+export function createSyncClient(
+  baseUrl: string,
+  fetchImpl: Fetch = fetch,
+  pageProtocol: string | undefined = process.env.EXPO_OS === 'web'
+    ? globalThis.location?.protocol
+    : undefined
+) {
   const base = normalizeServerUrl(baseUrl);
+  if (blockedAsMixedContent(base, pageProtocol)) throw new SyncError('needsHttps');
 
   async function request<T>(
     method: string,

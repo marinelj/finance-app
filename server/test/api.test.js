@@ -266,6 +266,14 @@ describe('API', { skip: !url && 'TEST_DATABASE_URL is not set' }, () => {
       headers: { Origin: 'http://localhost:8081' },
     });
     assert.equal(ok.headers.get('access-control-allow-origin'), 'http://localhost:8081');
+    const privateNetwork = await fetch(`${base}/api/sync`, {
+      method: 'OPTIONS',
+      headers: {
+        Origin: 'http://localhost:8081',
+        'Access-Control-Request-Private-Network': 'true',
+      },
+    });
+    assert.equal(privateNetwork.headers.get('access-control-allow-private-network'), 'true');
     const no = await fetch(`${base}/api/sync`, {
       method: 'OPTIONS',
       headers: { Origin: 'https://evil.example' },

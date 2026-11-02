@@ -795,6 +795,7 @@ const zhHans: Translation = {
     signInTitle: '登录你的服务器',
     serverUrl: '服务器地址',
     serverUrlHint: '运行财务服务器的电脑，例如 192.168.1.5:8787',
+    serverUrlHintWeb: '财务服务器的 https 地址，例如 https://mac-studio.your-tailnet.ts.net',
     email: '邮箱',
     password: '密码',
     passwordHint: '至少 8 个字符。这是服务器账户的密码，不是数据库密码。',
@@ -815,6 +816,7 @@ const zhHans: Translation = {
     signOut: '退出登录',
     errors: {
       badUrl: '这不像是一个服务器地址。',
+      needsHttps: '这个网页通过 https 打开，浏览器会拦截 http 地址。请使用服务器的 https 地址。',
       network: '无法连接服务器。请检查地址，并确认手机和服务器在同一网络。',
       wrongCredentials: '邮箱或密码错误。',
       signupClosed: '这个服务器不接受新账户。',

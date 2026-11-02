@@ -1,4 +1,10 @@
-import { createSyncClient, errorFromResponse, normalizeServerUrl, SyncError } from '../client';
+import {
+  blockedAsMixedContent,
+  createSyncClient,
+  errorFromResponse,
+  normalizeServerUrl,
+  SyncError,
+} from '../client';
 
 describe('normalizeServerUrl', () => {
   it('adds http:// and drops trailing slashes', () => {
@@ -47,5 +53,23 @@ describe('createSyncClient', () => {
     const denied = createSyncClient('h:1', (async () =>
       json(401, { error: 'unauthorized' })) as unknown as typeof fetch);
     await expect(denied.download('tok')).rejects.toMatchObject({ code: 'signedOut' });
+  });
+});
+
+describe('blockedAsMixedContent', () => {
+  it('blocks http servers from an https page, except loopback', () => {
+    expect(blockedAsMixedContent('http://192.168.1.5:8787', 'https:')).toBe(true);
+    expect(blockedAsMixedContent('https://mac-studio.example.ts.net', 'https:')).toBe(false);
+    expect(blockedAsMixedContent('http://localhost:8787', 'https:')).toBe(false);
+    expect(blockedAsMixedContent('http://192.168.1.5:8787', 'http:')).toBe(false);
+    expect(blockedAsMixedContent('http://192.168.1.5:8787', undefined)).toBe(false);
+  });
+
+  it('stops the client before any request', () => {
+    const fetchMock = jest.fn();
+    expect(() =>
+      createSyncClient('192.168.1.5:8787', fetchMock as unknown as typeof fetch, 'https:')
+    ).toThrow(expect.objectContaining({ code: 'needsHttps' }));
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 });
