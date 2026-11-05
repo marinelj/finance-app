@@ -15,7 +15,7 @@ import { SwitchRow } from '@/components/form/SwitchRow';
 import { TextField } from '@/components/form/TextField';
 import { Text } from '@/components/Text';
 import { useStyles } from '@/design/theme';
-import type { Theme } from '@/design/tokens';
+import { space, type Theme } from '@/design/tokens';
 import { saveWealthItem } from '@/db/wealth';
 import { annualCouponIncome, couponDates } from '@/domain/bonds';
 import { isLocalDate, type LocalDate } from '@/domain/dates';
@@ -43,6 +43,7 @@ import { useForm } from '@/hooks/useForm';
 import { formatDate, formatMonthShort } from '@/lib/format';
 import { haptics } from '@/lib/haptics';
 import { usePreferences } from '@/state/preferences';
+import { CONTENT_MAX_WIDTH, useCenteredGutter } from '@/lib/platform';
 
 import { tKey } from './meta';
 
@@ -69,6 +70,7 @@ export function WealthForm({
   const { t } = useTranslation();
   const styles = useStyles(makeStyles);
   const insets = useSafeAreaInsets();
+  const gutter = useCenteredGutter(space.xl);
   const { language } = usePreferences();
   const form = useForm(initialValues, (values) => validateWealthForm(kind, values, today));
   const { values, set, errors } = form;
@@ -251,7 +253,8 @@ export function WealthForm({
         ) : null}
       </ScrollView>
 
-      <View style={[styles.footer, { paddingBottom: insets.bottom + 12 }]}>
+      <View
+        style={[styles.footer, { paddingBottom: insets.bottom + 12, paddingHorizontal: gutter }]}>
         {form.submitted && !form.isValid ? (
           <Text variant="caption" tone="danger" align="center" accessibilityLiveRegion="polite">
             {t('form.fixErrors')}
@@ -325,7 +328,14 @@ function previewLines(
 const makeStyles = ({ colors, space }: Theme) =>
   StyleSheet.create({
     flex: { flex: 1, backgroundColor: colors.background },
-    content: { padding: space.xl, gap: space.lg, paddingBottom: space.huge },
+    content: {
+      padding: space.xl,
+      gap: space.lg,
+      paddingBottom: space.huge,
+      width: '100%',
+      maxWidth: CONTENT_MAX_WIDTH,
+      alignSelf: 'center',
+    },
     group: { gap: space.sm },
     footer: {
       gap: space.sm,

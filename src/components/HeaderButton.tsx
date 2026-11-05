@@ -1,6 +1,8 @@
 import { Pressable, StyleSheet } from 'react-native';
 
 import { useTheme } from '@/design/theme';
+import { useHover } from '@/hooks/useHover';
+import { isWeb } from '@/lib/platform';
 
 import { Icon, type IconName } from './Icon';
 import { Text } from './Text';
@@ -16,13 +18,19 @@ type HeaderButtonProps = {
 /** Text or icon button for native stack headers. */
 export function HeaderButton({ label, onPress, icon, bold }: HeaderButtonProps) {
   const { colors } = useTheme();
+  const { hovered, hoverProps } = useHover();
   return (
     <Pressable
       onPress={onPress}
+      {...hoverProps}
       hitSlop={10}
       accessibilityRole="button"
       accessibilityLabel={label}
-      style={({ pressed }) => [styles.button, pressed && styles.pressed]}>
+      style={({ pressed }) => [
+        styles.button,
+        hovered && { backgroundColor: colors.primarySoft },
+        pressed && styles.pressed,
+      ]}>
       {icon ? (
         <Icon name={icon} size={22} color={colors.primaryText} />
       ) : (
@@ -39,6 +47,14 @@ export function HeaderButton({ label, onPress, icon, bold }: HeaderButtonProps) 
 }
 
 const styles = StyleSheet.create({
-  button: { minHeight: 36, minWidth: 36, justifyContent: 'center', paddingHorizontal: 4 },
+  button: {
+    minHeight: 36,
+    minWidth: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+    // Browsers show a hover tint, so give it some room around the label.
+    paddingHorizontal: isWeb ? 10 : 4,
+    borderRadius: 18,
+  },
   pressed: { opacity: 0.5 },
 });

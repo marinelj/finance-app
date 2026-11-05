@@ -20,6 +20,7 @@ import { ProductRow } from '@/features/credit/ProductRow';
 import { haptics } from '@/lib/haptics';
 import { useCreditData } from '@/state/creditData';
 import { usePreferences } from '@/state/preferences';
+import { isWeb } from '@/lib/platform';
 
 export default function CreditScreen() {
   const { t } = useTranslation();
@@ -132,7 +133,7 @@ export default function CreditScreen() {
           />
           {active.length > 1 ? (
             <Text variant="caption" tone="muted" align="center">
-              {t('credit.deckHint')}
+              {isWeb ? t('credit.deckHintKeys') : t('credit.deckHint')}
             </Text>
           ) : null}
         </Appear>

@@ -5,6 +5,7 @@ import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-na
 import { useMotion } from '@/design/motion';
 import { useStyles } from '@/design/theme';
 import { springs, type Theme } from '@/design/tokens';
+import { isHovered } from '@/hooks/useHover';
 import { haptics } from '@/lib/haptics';
 
 import { Text } from './Text';
@@ -65,7 +66,7 @@ export function SegmentedControl<T extends string>({
               haptics.selection();
               onChange(option.value);
             }}
-            style={styles.segment}>
+            style={(state) => [styles.segment, !selected && isHovered(state) && styles.hovered]}>
             <Text
               variant="callout"
               weight={selected ? '700' : '500'}
@@ -98,6 +99,7 @@ const makeStyles = ({ colors, radius, shadow }: Theme) =>
       backgroundColor: colors.surface,
       boxShadow: shadow.card,
     },
+    hovered: { backgroundColor: 'rgba(20, 20, 43, 0.05)', borderRadius: radius.pill },
     segment: {
       flex: 1,
       minHeight: 36,

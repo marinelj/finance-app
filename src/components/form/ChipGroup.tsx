@@ -2,6 +2,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 
 import { useStyles, useTheme } from '@/design/theme';
 import type { Theme } from '@/design/tokens';
+import { isHovered } from '@/hooks/useHover';
 import { haptics } from '@/lib/haptics';
 
 import { Text } from '../Text';
@@ -50,10 +51,11 @@ export function ChipGroup<T extends string | number>(props: ChipGroupProps<T>) {
             accessibilityState={props.multiple ? { checked: selected } : { selected }}
             accessibilityLabel={option.label}
             hitSlop={4}
-            style={({ pressed }) => [
+            style={(state) => [
               styles.chip,
               selected && { backgroundColor: colors.primary },
-              pressed && !selected && styles.pressed,
+              selected && isHovered(state) && { backgroundColor: colors.primaryPressed },
+              (state.pressed || isHovered(state)) && !selected && styles.pressed,
             ]}>
             <Text
               variant="callout"

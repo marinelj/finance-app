@@ -28,6 +28,7 @@ import { scheduleOnRN } from 'react-native-worklets';
 import { useMotion } from '@/design/motion';
 import { useStyles, useTheme } from '@/design/theme';
 import { springs, type Theme } from '@/design/tokens';
+import { useIsWide } from '@/lib/platform';
 
 import { Icon } from './Icon';
 import { Text } from './Text';
@@ -46,7 +47,8 @@ const DISMISS_VELOCITY = 900;
 
 /**
  * Modal sheet that springs up from the bottom. Drag the handle down, tap the backdrop, press the
- * close button, use Android back or the VoiceOver escape gesture to dismiss.
+ * close button, use Android back or the VoiceOver escape gesture to dismiss. On wide screens
+ * (desktop browsers) it becomes a centred dialog that rises and fades in, and Escape closes it.
  */
 export function BottomSheet({ visible, onClose, title, children, footer }: BottomSheetProps) {
   const { t } = useTranslation();
@@ -55,12 +57,15 @@ export function BottomSheet({ visible, onClose, title, children, footer }: Botto
   const insets = useSafeAreaInsets();
   const { height } = useWindowDimensions();
   const { reduceMotion } = useMotion();
+  const wide = useIsWide();
+  /** Offset of the closed sheet: off the bottom edge, or a short drop for the dialog. */
+  const closed = wide ? 32 : height;
 
   // Stay mounted while the closing animation runs.
   const [rendered, setRendered] = useState(visible);
   if (visible && !rendered) setRendered(true);
 
-  const offset = useSharedValue(height);
+  const offset = useSharedValue(closed);
   const sheetHeight = useSharedValue(height);
 
   useEffect(() => {
@@ -71,13 +76,15 @@ export function BottomSheet({ visible, onClose, title, children, footer }: Botto
     }
     const unmount = () => setRendered(false);
     offset.set(
-      withTiming(height, { duration: reduceMotion ? 0 : 220 }, (finished) => {
+      withTiming(closed, { duration: reduceMotion ? 0 : wide ? 160 : 220 }, (finished) => {
         if (finished) scheduleOnRN(unmount);
       })
     );
-  }, [visible, rendered, reduceMotion, height, offset]);
+  }, [visible, rendered, reduceMotion, closed, wide, offset]);
 
   const pan = usePanGesture({
+    // The centred dialog on wide screens is not dragged; Escape or the close button dismiss it.
+    enabled: !wide,
     activeOffsetY: 8,
     onUpdate: (event) => {
       'worklet';
@@ -97,12 +104,19 @@ export function BottomSheet({ visible, onClose, title, children, footer }: Botto
   const backdropStyle = useAnimatedStyle(() => ({
     opacity: interpolate(
       offset.get(),
-      [0, Math.max(1, sheetHeight.get())],
+      [0, wide ? closed : Math.max(1, sheetHeight.get())],
       [1, 0],
       Extrapolation.CLAMP
     ),
   }));
-  const sheetStyle = useAnimatedStyle(() => ({ transform: [{ translateY: offset.get() }] }));
+  const sheetStyle = useAnimatedStyle(() => {
+    if (!wide) return { transform: [{ translateY: offset.get() }] };
+    const t = interpolate(offset.get(), [0, closed], [0, 1], Extrapolation.CLAMP);
+    return {
+      opacity: 1 - t,
+      transform: [{ translateY: offset.get() }, { scale: 1 - t * 0.04 }],
+    };
+  });
 
   if (!rendered) return null;
 
@@ -125,7 +139,7 @@ export function BottomSheet({ visible, onClose, title, children, footer }: Botto
         </Animated.View>
         <KeyboardAvoidingView
           behavior={process.env.EXPO_OS === 'ios' ? 'padding' : undefined}
-          style={styles.avoider}
+          style={[styles.avoider, wide && styles.avoiderWide]}
           pointerEvents="box-none">
           <Animated.View
             accessibilityViewIsModal
@@ -133,12 +147,14 @@ export function BottomSheet({ visible, onClose, title, children, footer }: Botto
             onLayout={(event) => sheetHeight.set(event.nativeEvent.layout.height)}
             style={[
               styles.sheet,
-              { maxHeight: height - insets.top - 24, paddingBottom: insets.bottom + 16 },
+              wide
+                ? [styles.dialog, { maxHeight: height - 80 }]
+                : { maxHeight: height - insets.top - 24, paddingBottom: insets.bottom + 16 },
               sheetStyle,
             ]}>
             <GestureDetector gesture={pan}>
               <View style={styles.header}>
-                <View style={styles.grabber} />
+                {wide ? <View style={styles.dialogTop} /> : <View style={styles.grabber} />}
                 {title ? (
                   <View style={styles.titleRow}>
                     <Text variant="title" accessibilityRole="header" style={styles.title}>
@@ -175,12 +191,20 @@ const makeStyles = ({ colors, radius, space, shadow }: Theme) =>
     root: { flex: 1 },
     backdrop: { backgroundColor: colors.overlay },
     avoider: { flex: 1, justifyContent: 'flex-end' },
+    avoiderWide: { justifyContent: 'center', alignItems: 'center', padding: space.xxl },
     sheet: {
       backgroundColor: colors.surface,
       borderTopLeftRadius: radius.xl,
       borderTopRightRadius: radius.xl,
       boxShadow: shadow.raised,
     },
+    dialog: {
+      width: '100%',
+      maxWidth: 520,
+      borderRadius: radius.xl,
+      paddingBottom: space.xxl,
+    },
+    dialogTop: { height: space.lg },
     header: { paddingTop: space.sm, paddingHorizontal: space.xxl },
     grabber: {
       alignSelf: 'center',
