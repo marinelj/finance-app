@@ -1,20 +1,29 @@
-import { fireEvent, render, screen } from '@testing-library/react-native';
+import { render, screen } from '@testing-library/react-native';
 import type { PropsWithChildren } from 'react';
 
 import ProductDetail from '@/app/product/[id]/index';
 import type { ButtonProps } from '@/components/Button';
 
 const mockPush = jest.fn();
+let mockParams: { id: string; section?: string } = { id: 'synthetic' };
 jest.mock('expo-router', () => ({
   Stack: { Screen: () => null },
-  useLocalSearchParams: () => ({ id: 'synthetic' }),
+  useLocalSearchParams: () => mockParams,
   useRouter: () => ({ push: mockPush }),
 }));
 jest.mock('react-i18next', () => ({ useTranslation: () => ({ t: (key: string) => key }) }));
 jest.mock('@/state/preferences', () => ({
   usePreferences: () => ({ language: 'en', prefs: { hideAmounts: false } }),
 }));
-jest.mock('@/state/toast', () => ({ useToast: () => jest.fn() }));
+const mockToast = jest.fn();
+jest.mock('@/state/toast', () => ({ useToast: () => mockToast }));
+const mockFormProps = jest.fn();
+jest.mock('@/features/credit/ProductForm', () => ({
+  ProductForm: (props: PropsWithChildren<Record<string, unknown>>) => {
+    mockFormProps(props);
+    return props.children;
+  },
+}));
 jest.mock('@/state/creditData', () => ({
   useCreditData: () => ({ customTypes: [], today: '2026-11-06' }),
   useProduct: () => ({
@@ -69,21 +78,31 @@ jest.mock('@/features/credit/PaymentSheet', () => ({ PaymentSheet: () => null })
 jest.mock('@/features/credit/ProductCard', () => ({ ProductCard: () => null }));
 jest.mock('@/design/motion', () => ({ useMotion: () => ({ reduceMotion: true }) }));
 
-it('exposes a body Edit action even when the native header is absent', async () => {
-  await render(<ProductDetail />);
-  await fireEvent.press(screen.getByRole('button', { name: 'common.edit' }));
-  expect(mockPush).toHaveBeenLastCalledWith({
-    pathname: '/product/[id]/edit',
-    params: { id: 'synthetic' },
-  });
+beforeEach(() => {
+  mockParams = { id: 'synthetic' };
+  jest.clearAllMocks();
 });
-it('opens the billing section from either billing-day detail row', async () => {
+
+it('opens straight into the edit form, with no separate Edit button', async () => {
   await render(<ProductDetail />);
-  for (const key of ['product.statementDay', 'product.dueDay']) {
-    await fireEvent.press(screen.getByText(key));
-    expect(mockPush).toHaveBeenLastCalledWith({
-      pathname: '/product/[id]/edit',
-      params: { id: 'synthetic', section: 'billing' },
-    });
-  }
+  const props = mockFormProps.mock.calls.at(-1)![0];
+  expect(props.existing.id).toBe('synthetic');
+  expect(props.initialValues.name).toBe('Synthetic card');
+  expect(props.initialSection).toBeUndefined();
+  expect(screen.queryByRole('button', { name: 'common.edit' })).toBeNull();
+  // Payments stay on the same page, below the fields.
+  expect(screen.getByRole('button', { name: 'product.markPaid' })).toBeTruthy();
+});
+
+it('saves in place: a toast, and no navigation away', async () => {
+  await render(<ProductDetail />);
+  mockFormProps.mock.calls.at(-1)![0].onSaved('synthetic');
+  expect(mockToast).toHaveBeenCalledWith({ message: 'form.saved' });
+  expect(mockPush).not.toHaveBeenCalled();
+});
+
+it('honours the billing section link from older routes', async () => {
+  mockParams = { id: 'synthetic', section: 'billing' };
+  await render(<ProductDetail />);
+  expect(mockFormProps.mock.calls.at(-1)![0].initialSection).toBe('billing');
 });

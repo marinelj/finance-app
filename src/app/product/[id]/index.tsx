@@ -10,7 +10,6 @@ import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { DueBadge } from '@/components/DueBadge';
 import { EmptyState } from '@/components/EmptyState';
-import { HeaderButton } from '@/components/HeaderButton';
 import { Icon } from '@/components/Icon';
 import { ProgressRing } from '@/components/ProgressRing';
 import { Screen } from '@/components/Screen';
@@ -21,14 +20,15 @@ import { Text } from '@/components/Text';
 import { useStyles, useTheme } from '@/design/theme';
 import type { Theme } from '@/design/tokens';
 import { deleteProduct, setProductActive, undoPayment } from '@/db/credit';
-import { aprPercent, dailyRatePercent } from '@/domain/credit';
+import { dailyRatePercent } from '@/domain/credit';
 import { isWeekend } from '@/domain/dates';
 import { dailyInterestCost } from '@/domain/loans';
-import { formatMoney, formatPercent, roundTo } from '@/domain/money';
+import { formatMoney, formatPercent } from '@/domain/money';
 import { floatForPurchase } from '@/domain/paymentOptimizer';
-import { dayOfMonthLabel, productTypeLabel, utilizationTone } from '@/features/credit/labels';
+import { productTypeLabel, utilizationTone } from '@/features/credit/labels';
 import { PaymentSheet } from '@/features/credit/PaymentSheet';
-import { ProductCard } from '@/features/credit/ProductCard';
+import { ProductForm } from '@/features/credit/ProductForm';
+import { formValuesFromProduct } from '@/domain/productForm';
 import { confirm } from '@/lib/confirm';
 import { formatDate } from '@/lib/format';
 import { haptics } from '@/lib/haptics';
@@ -45,7 +45,7 @@ export default function ProductDetailScreen() {
   const { colors } = useTheme();
   const styles = useStyles(makeStyles);
   const { language } = usePreferences();
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, section } = useLocalSearchParams<{ id: string; section?: string }>();
   const { customTypes, today } = useCreditData();
   const data = useProduct(id);
   const [paying, setPaying] = useState(false);
@@ -61,8 +61,7 @@ export default function ProductDetailScreen() {
     );
   }
 
-  const { product, due, utilization, available, installments, payments, customType, latestBill } =
-    data;
+  const { product, due, utilization, available, installments, payments, latestBill } = data;
   const typeLabel = productTypeLabel(product, customTypes, t);
   const money = (amount: number) => formatMoney(amount, product.currency, { locale: language });
   const date = (value: string, weekday = false) => formatDate(value, language, { today, weekday });
@@ -110,16 +109,6 @@ export default function ProductDetailScreen() {
     deleteProduct(product.id);
   };
 
-  const rateText = (() => {
-    if (product.interestRate == null || product.interestRateUnit == null) return null;
-    if (product.interestRateUnit === 'daily') {
-      return t('product.perDay', {
-        rate: product.interestRate,
-        apr: roundTo(aprPercent(product.interestRate, 'daily') ?? 0, 2),
-      });
-    }
-    return t('product.perYear', { rate: product.interestRate });
-  })();
   const daily = dailyRatePercent(product.interestRate, product.interestRateUnit);
   const dailyCost =
     !product.hasGracePeriod && daily != null && product.balance > 0
@@ -128,429 +117,322 @@ export default function ProductDetailScreen() {
 
   const floatToday = floatForPurchase(product, today);
 
-  const edit = (section?: 'billing') =>
-    router.push({
-      pathname: '/product/[id]/edit',
-      params: { id: product.id, ...(section ? { section } : {}) },
-    });
-
-  const details: [string, string][] = [
-    [t('product.type'), customType ? `${typeLabel} · ${t(`kinds.${product.kind}`)}` : typeLabel],
-    [t('product.currency'), product.currency],
-  ];
-  if (product.statementDay != null) {
-    details.push([t('product.statementDay'), dayOfMonthLabel(product.statementDay, t)]);
-  }
-  if (product.dueRule === 'fixed_day' && product.dueDay != null) {
-    details.push([t('product.dueDay'), dayOfMonthLabel(product.dueDay, t)]);
-  }
-  if (product.dueRule === 'days_after_statement' && product.dueDaysAfterStatement != null) {
-    details.push([
-      t('product.dueDay'),
-      t('product.daysAfterStatement', { count: product.dueDaysAfterStatement }),
-    ]);
-  }
-  if (product.repaymentDay != null) {
-    details.push([t('product.repaymentDay'), dayOfMonthLabel(product.repaymentDay, t)]);
-  }
-  if (product.loanPrincipal != null && product.loanTermMonths != null && product.loanStartDate) {
-    details.push([
-      t('product.loan'),
-      t('product.loanSummary', {
-        principal: money(product.loanPrincipal),
-        months: product.loanTermMonths,
-        date: formatDate(product.loanStartDate, language, { year: true }),
-      }),
-    ]);
-  }
-  if (product.billEmail) details.push([t('form.billEmail'), product.billEmail]);
-  if (product.cardLast4) details.push([t('form.cardLast4'), product.cardLast4]);
-  if (rateText) details.push([t('product.interest'), rateText]);
-  details.push([
-    t('product.gracePeriod'),
-    product.hasGracePeriod ? (product.graceNote ?? t('common.yes')) : t('product.graceNone'),
-  ]);
-  if (product.annualFee != null) details.push([t('product.annualFee'), money(product.annualFee)]);
-  if (product.feeWaiver) details.push([t('product.feeWaiver'), product.feeWaiver]);
-
   let block = 0;
   return (
-    <Screen hasHeader>
-      <Stack.Screen
-        options={{
-          title: product.name,
-          headerRight: () => (
-            <HeaderButton
-              label={t('common.edit')}
-              onPress={() =>
-                router.push({ pathname: '/product/[id]/edit', params: { id: product.id } })
-              }
-            />
-          ),
-        }}
-      />
-
-      <Appear index={block++}>
-        <ProductCard
-          name={product.name}
-          issuer={product.issuer}
-          typeLabel={typeLabel}
-          emoji={product.emoji}
-          color={product.color}
-          currency={product.currency}
-          balance={product.balance}
-          due={due}
-          isActive={product.isActive}
-          today={today}
-        />
-      </Appear>
-
-      <Button
-        label={t('common.edit')}
-        icon="pencil-outline"
-        variant="secondary"
-        onPress={() => edit()}
-      />
-
-      {latestBill ? (
-        <Card style={styles.section}>
-          <SectionHeader
-            title={t('product.latestEmailBill', {
-              date: date(latestBill.statementDate ?? latestBill.receivedAt.slice(0, 10)),
-            })}
-          />
-          <AmountText
-            value={latestBill.statementBalance}
-            currency={latestBill.currency}
-            variant="title"
-          />
-          <Text tone="secondary">
-            {t('product.dueOn', { date: date(latestBill.dueDate, true) })}
-          </Text>
-        </Card>
-      ) : null}
-
-      {!product.isActive ? (
-        <Card variant="outline" padding="lg" style={styles.banner}>
-          <Icon name="archive-outline" size={18} color={colors.textMuted} />
-          <Text variant="callout" tone="secondary" style={styles.flex}>
-            {t('product.closedBanner')}
-          </Text>
-        </Card>
-      ) : null}
-
-      {product.isActive ? (
-        <Appear index={block++}>
-          <Card style={styles.section}>
-            <View style={styles.rowBetween}>
-              <Text variant="micro" tone="muted">
-                {t('product.nextPayment')}
-              </Text>
-              {due ? <DueBadge daysLeft={due.daysLeft} /> : null}
-            </View>
-            {due ? (
-              <>
-                <View style={styles.amountRow}>
-                  {due.amountIsEstimate ? (
-                    <Text variant="title" tone="muted">
-                      ≈
-                    </Text>
-                  ) : null}
-                  <AmountText
-                    value={due.amount}
-                    currency={product.currency}
-                    variant="display"
-                    animate
-                  />
-                </View>
-                <Text variant="callout" tone="secondary">
-                  {[
-                    t('product.dueOn', { date: date(due.dueDate, true) }),
-                    dueInstallment
-                      ? t('product.installmentN', {
-                          seq: dueInstallment.seq,
-                          total: installments.length,
-                        })
-                      : due.statementDate
-                        ? t('product.statementOn', { date: date(due.statementDate) })
-                        : null,
-                  ]
-                    .filter(Boolean)
-                    .join(' · ')}
-                </Text>
-                {due.amountIsEstimate ? (
-                  <Note icon="information-circle-outline" text={t('product.amountEstimate')} />
-                ) : null}
-                {isWeekend(due.dueDate) ? (
-                  <Note icon="calendar-outline" text={t('product.weekendDue')} />
-                ) : null}
-              </>
-            ) : (
-              <Text variant="body" tone="secondary">
-                {t('product.nothingDue')}
-              </Text>
-            )}
-            <Button
-              label={t('product.markPaid')}
-              icon="checkmark-circle"
-              size="lg"
-              fullWidth
-              variant={due ? 'primary' : 'secondary'}
-              haptic={false}
-              onPress={() => setPaying(true)}
-            />
-          </Card>
-        </Appear>
-      ) : null}
-
-      <Appear index={block++} style={styles.tiles}>
-        <StatTile
-          style={styles.flex}
-          emoji="🧾"
-          tone="pink"
-          label={t('product.balance')}
-          value={<AmountText value={product.balance} currency={product.currency} variant="title" />}
-        />
-        {available != null ? (
-          <StatTile
-            style={styles.flex}
-            emoji="🪙"
-            tone="mint"
-            label={t('product.available')}
-            value={<AmountText value={available} currency={product.currency} variant="title" />}
-            caption={`${t('product.limit')} ${money(product.creditLimit)}`}
-          />
-        ) : null}
-      </Appear>
-
-      {utilization != null ? (
-        <Appear index={block++}>
-          <Card
-            onPress={() => setUtilizationInfo(true)}
-            accessibilityLabel={t('product.utilizationA11y', {
-              percent: Math.round(utilization * 100),
-            })}
-            style={styles.utilization}>
-            <ProgressRing
-              progress={utilization}
-              size={88}
-              color={colors.status[utilizationTone(utilization)].mark}
-              trackColor={colors.status[utilizationTone(utilization)].soft}
-              accessibilityLabel={t('product.utilizationA11y', {
-                percent: Math.round(utilization * 100),
-              })}>
-              <Text variant="headline">{formatPercent(utilization, { decimals: 0 })}</Text>
-            </ProgressRing>
-            <View style={[styles.flex, styles.gapSm]}>
-              <Text variant="headline">{t('product.utilization')}</Text>
-              <StatusPill
-                tone={utilizationTone(utilization)}
-                label={t(
-                  utilizationTone(utilization) === 'good'
-                    ? 'product.utilizationGood'
-                    : utilizationTone(utilization) === 'caution'
-                      ? 'product.utilizationCaution'
-                      : 'product.utilizationDanger'
-                )}
-              />
-            </View>
-            <Icon name="information-circle-outline" size={20} color={colors.textMuted} />
-          </Card>
-        </Appear>
-      ) : null}
-
-      {installments.length > 0 ? (
-        <Appear index={block++}>
+    <>
+      <Stack.Screen options={{ title: product.name }} />
+      <ProductForm
+        key={product.id}
+        initialSection={section === 'billing' ? 'billing' : undefined}
+        initialValues={formValuesFromProduct(product, installments.length > 0, today)}
+        existing={{ id: product.id, product, installments }}
+        typeLabel={typeLabel}
+        today={today}
+        onSaved={() => toast({ message: t('form.saved') })}>
+        {latestBill ? (
           <Card style={styles.section}>
             <SectionHeader
-              title={t('product.installments')}
-              action={
-                installments.length > INSTALLMENTS_PREVIEW
-                  ? {
-                      label: showAllInstallments
-                        ? t('product.showLess')
-                        : t('product.showAll', { count: installments.length }),
-                      onPress: () => setShowAllInstallments((value) => !value),
-                    }
-                  : undefined
-              }
+              title={t('product.latestEmailBill', {
+                date: date(latestBill.statementDate ?? latestBill.receivedAt.slice(0, 10)),
+              })}
             />
-            <Text variant="caption" tone="muted">
-              {t('product.installmentsLeft', { count: unpaidInstallments.length })}
+            <AmountText
+              value={latestBill.statementBalance}
+              currency={latestBill.currency}
+              variant="title"
+            />
+            <Text tone="secondary">
+              {t('product.dueOn', { date: date(latestBill.dueDate, true) })}
             </Text>
-            <View style={styles.progressTrack}>
-              <View
-                style={[
-                  styles.progressFill,
-                  {
-                    width: `${((installments.length - unpaidInstallments.length) / installments.length) * 100}%`,
-                    backgroundColor: product.color,
-                  },
-                ]}
-              />
-            </View>
-            {shownInstallments.map((item) => (
-              <View key={item.id} style={styles.listRow}>
-                <View style={styles.flex}>
-                  <Text variant="callout" weight="600">
-                    {date(item.dueDate)} ·{' '}
-                    {t('product.installmentN', { seq: item.seq, total: installments.length })}
-                  </Text>
-                  <Text variant="caption" tone="muted">
-                    {t('product.principalInterest', {
-                      principal: money(item.principal),
-                      interest: money(item.interest),
-                    })}
-                  </Text>
-                </View>
-                {item.paidAt ? (
-                  <StatusPill tone="good" label={t('product.paid')} size="sm" />
-                ) : (
-                  <AmountText value={item.amount} currency={product.currency} variant="callout" />
-                )}
-              </View>
-            ))}
           </Card>
-        </Appear>
-      ) : null}
+        ) : null}
 
-      <Appear index={block++}>
-        <Card style={styles.section}>
-          <SectionHeader title={t('product.paymentHistory')} />
-          {payments.length === 0 ? (
-            <Text variant="callout" tone="muted">
-              {t('product.noPayments')}
+        {!product.isActive ? (
+          <Card variant="outline" padding="lg" style={styles.banner}>
+            <Icon name="archive-outline" size={18} color={colors.textMuted} />
+            <Text variant="callout" tone="secondary" style={styles.flex}>
+              {t('product.closedBanner')}
             </Text>
-          ) : (
-            payments.map((payment) => (
-              <View key={payment.id} style={styles.listRow}>
-                <View style={styles.flex}>
-                  <Text variant="callout" weight="600">
-                    {date(payment.date)}
-                  </Text>
-                  <Text variant="caption" tone="muted" numberOfLines={2}>
+          </Card>
+        ) : null}
+
+        {product.isActive ? (
+          <Appear index={block++}>
+            <Card style={styles.section}>
+              <View style={styles.rowBetween}>
+                <Text variant="micro" tone="muted">
+                  {t('product.nextPayment')}
+                </Text>
+                {due ? <DueBadge daysLeft={due.daysLeft} /> : null}
+              </View>
+              {due ? (
+                <>
+                  <View style={styles.amountRow}>
+                    {due.amountIsEstimate ? (
+                      <Text variant="title" tone="muted">
+                        ≈
+                      </Text>
+                    ) : null}
+                    <AmountText
+                      value={due.amount}
+                      currency={product.currency}
+                      variant="display"
+                      animate
+                    />
+                  </View>
+                  <Text variant="callout" tone="secondary">
                     {[
-                      payment.forDueDate
-                        ? t('product.settledDue', { date: date(payment.forDueDate) })
-                        : t('product.partialPayment'),
-                      payment.note,
+                      t('product.dueOn', { date: date(due.dueDate, true) }),
+                      dueInstallment
+                        ? t('product.installmentN', {
+                            seq: dueInstallment.seq,
+                            total: installments.length,
+                          })
+                        : due.statementDate
+                          ? t('product.statementOn', { date: date(due.statementDate) })
+                          : null,
                     ]
                       .filter(Boolean)
                       .join(' · ')}
                   </Text>
-                </View>
-                <View style={styles.trailing}>
-                  <AmountText
-                    value={payment.amount}
-                    currency={product.currency}
-                    variant="callout"
-                  />
-                  {payment.id === latestPaymentId ? (
-                    <Pressable
-                      onPress={() => undoLatest(payment.id)}
-                      hitSlop={8}
-                      accessibilityRole="button"
-                      accessibilityLabel={`${t('common.undo')}, ${date(payment.date)}`}>
-                      <Text variant="caption" tone="primary" weight="700">
-                        {t('common.undo')}
-                      </Text>
-                    </Pressable>
+                  {due.amountIsEstimate ? (
+                    <Note icon="information-circle-outline" text={t('product.amountEstimate')} />
                   ) : null}
-                </View>
-              </View>
-            ))
-          )}
-        </Card>
-      </Appear>
+                  {isWeekend(due.dueDate) ? (
+                    <Note icon="calendar-outline" text={t('product.weekendDue')} />
+                  ) : null}
+                </>
+              ) : (
+                <Text variant="body" tone="secondary">
+                  {t('product.nothingDue')}
+                </Text>
+              )}
+              <Button
+                label={t('product.markPaid')}
+                icon="checkmark-circle"
+                size="lg"
+                fullWidth
+                variant={due ? 'primary' : 'secondary'}
+                haptic={false}
+                onPress={() => setPaying(true)}
+              />
+            </Card>
+          </Appear>
+        ) : null}
 
-      <Appear index={block++}>
-        <Card style={styles.section}>
-          <SectionHeader title={t('product.details')} />
-          {details.map(([label, value]) => {
-            const billing = label === t('product.statementDay') || label === t('product.dueDay');
-            return (
-              <Pressable
-                key={label}
-                style={styles.detailRow}
-                disabled={!billing}
-                onPress={() => edit('billing')}
-                accessibilityRole={billing ? 'button' : undefined}
-                accessibilityHint={billing ? t('product.editBilling') : undefined}>
-                <Text variant="callout" tone="muted" style={styles.detailLabel}>
-                  {label}
-                </Text>
-                <Text variant="callout" weight="600" style={styles.detailValue}>
-                  {value}
-                </Text>
-                {billing ? (
-                  <Icon name="pencil-outline" size={16} color={colors.primaryText} />
-                ) : null}
-              </Pressable>
-            );
-          })}
-          {floatToday ? (
-            <Note
-              icon="sparkles-outline"
-              text={t('product.floatToday', {
-                count: floatToday.floatDays,
-                date: date(floatToday.dueDate, true),
+        {available != null ? (
+          <Appear index={block++} style={styles.tiles}>
+            <StatTile
+              style={styles.flex}
+              emoji="🪙"
+              tone="mint"
+              label={t('product.available')}
+              value={<AmountText value={available} currency={product.currency} variant="title" />}
+              caption={`${t('product.limit')} ${money(product.creditLimit)}`}
+            />
+          </Appear>
+        ) : null}
+
+        {utilization != null ? (
+          <Appear index={block++}>
+            <Card
+              onPress={() => setUtilizationInfo(true)}
+              accessibilityLabel={t('product.utilizationA11y', {
+                percent: Math.round(utilization * 100),
               })}
-            />
-          ) : null}
-          {dailyCost != null && dailyCost > 0 ? (
-            <Note
-              icon="trending-up-outline"
-              text={t('product.dailyCost', { amount: money(dailyCost) })}
-              tone="caution"
-            />
-          ) : null}
-          {product.notes ? (
-            <View style={styles.gapSm}>
-              <Text variant="callout" tone="muted">
-                {t('product.notes')}
+              style={styles.utilization}>
+              <ProgressRing
+                progress={utilization}
+                size={88}
+                color={colors.status[utilizationTone(utilization)].mark}
+                trackColor={colors.status[utilizationTone(utilization)].soft}
+                accessibilityLabel={t('product.utilizationA11y', {
+                  percent: Math.round(utilization * 100),
+                })}>
+                <Text variant="headline">{formatPercent(utilization, { decimals: 0 })}</Text>
+              </ProgressRing>
+              <View style={[styles.flex, styles.gapSm]}>
+                <Text variant="headline">{t('product.utilization')}</Text>
+                <StatusPill
+                  tone={utilizationTone(utilization)}
+                  label={t(
+                    utilizationTone(utilization) === 'good'
+                      ? 'product.utilizationGood'
+                      : utilizationTone(utilization) === 'caution'
+                        ? 'product.utilizationCaution'
+                        : 'product.utilizationDanger'
+                  )}
+                />
+              </View>
+              <Icon name="information-circle-outline" size={20} color={colors.textMuted} />
+            </Card>
+          </Appear>
+        ) : null}
+
+        {installments.length > 0 ? (
+          <Appear index={block++}>
+            <Card style={styles.section}>
+              <SectionHeader
+                title={t('product.installments')}
+                action={
+                  installments.length > INSTALLMENTS_PREVIEW
+                    ? {
+                        label: showAllInstallments
+                          ? t('product.showLess')
+                          : t('product.showAll', { count: installments.length }),
+                        onPress: () => setShowAllInstallments((value) => !value),
+                      }
+                    : undefined
+                }
+              />
+              <Text variant="caption" tone="muted">
+                {t('product.installmentsLeft', { count: unpaidInstallments.length })}
               </Text>
-              <Text variant="body">{product.notes}</Text>
-            </View>
-          ) : null}
-        </Card>
-      </Appear>
+              <View style={styles.progressTrack}>
+                <View
+                  style={[
+                    styles.progressFill,
+                    {
+                      width: `${((installments.length - unpaidInstallments.length) / installments.length) * 100}%`,
+                      backgroundColor: product.color,
+                    },
+                  ]}
+                />
+              </View>
+              {shownInstallments.map((item) => (
+                <View key={item.id} style={styles.listRow}>
+                  <View style={styles.flex}>
+                    <Text variant="callout" weight="600">
+                      {date(item.dueDate)} ·{' '}
+                      {t('product.installmentN', { seq: item.seq, total: installments.length })}
+                    </Text>
+                    <Text variant="caption" tone="muted">
+                      {t('product.principalInterest', {
+                        principal: money(item.principal),
+                        interest: money(item.interest),
+                      })}
+                    </Text>
+                  </View>
+                  {item.paidAt ? (
+                    <StatusPill tone="good" label={t('product.paid')} size="sm" />
+                  ) : (
+                    <AmountText value={item.amount} currency={product.currency} variant="callout" />
+                  )}
+                </View>
+              ))}
+            </Card>
+          </Appear>
+        ) : null}
 
-      <Appear index={block++} style={styles.actions}>
-        <Button
-          label={product.isActive ? t('product.closeAccount') : t('product.reopen')}
-          icon={product.isActive ? 'archive-outline' : 'refresh'}
-          variant="secondary"
-          fullWidth
-          onPress={() => setProductActive(product.id, !product.isActive)}
-        />
-        <Button
-          label={t('common.delete')}
-          icon="trash-outline"
-          variant="danger"
-          fullWidth
-          onPress={() => void remove()}
-        />
-      </Appear>
+        <Appear index={block++}>
+          <Card style={styles.section}>
+            <SectionHeader title={t('product.paymentHistory')} />
+            {payments.length === 0 ? (
+              <Text variant="callout" tone="muted">
+                {t('product.noPayments')}
+              </Text>
+            ) : (
+              payments.map((payment) => (
+                <View key={payment.id} style={styles.listRow}>
+                  <View style={styles.flex}>
+                    <Text variant="callout" weight="600">
+                      {date(payment.date)}
+                    </Text>
+                    <Text variant="caption" tone="muted" numberOfLines={2}>
+                      {[
+                        payment.forDueDate
+                          ? t('product.settledDue', { date: date(payment.forDueDate) })
+                          : t('product.partialPayment'),
+                        payment.note,
+                      ]
+                        .filter(Boolean)
+                        .join(' · ')}
+                    </Text>
+                  </View>
+                  <View style={styles.trailing}>
+                    <AmountText
+                      value={payment.amount}
+                      currency={product.currency}
+                      variant="callout"
+                    />
+                    {payment.id === latestPaymentId ? (
+                      <Pressable
+                        onPress={() => undoLatest(payment.id)}
+                        hitSlop={8}
+                        accessibilityRole="button"
+                        accessibilityLabel={`${t('common.undo')}, ${date(payment.date)}`}>
+                        <Text variant="caption" tone="primary" weight="700">
+                          {t('common.undo')}
+                        </Text>
+                      </Pressable>
+                    ) : null}
+                  </View>
+                </View>
+              ))
+            )}
+          </Card>
+        </Appear>
 
-      <PaymentSheet
-        visible={paying}
-        onClose={() => setPaying(false)}
-        product={product}
-        due={due}
-        installment={dueInstallment}
-        installmentCount={installments.length}
-        today={today}
-        onPaid={onPaid}
-      />
-      <BottomSheet
-        visible={utilizationInfo}
-        onClose={() => setUtilizationInfo(false)}
-        title={t('product.utilization')}>
-        <Text variant="body" tone="secondary">
-          {t('product.utilizationExplain')}
-        </Text>
-      </BottomSheet>
-    </Screen>
+        {floatToday || (dailyCost != null && dailyCost > 0) ? (
+          <Appear index={block++}>
+            <Card style={styles.section}>
+              {floatToday ? (
+                <Note
+                  icon="sparkles-outline"
+                  text={t('product.floatToday', {
+                    count: floatToday.floatDays,
+                    date: date(floatToday.dueDate, true),
+                  })}
+                />
+              ) : null}
+              {dailyCost != null && dailyCost > 0 ? (
+                <Note
+                  icon="trending-up-outline"
+                  text={t('product.dailyCost', { amount: money(dailyCost) })}
+                  tone="caution"
+                />
+              ) : null}
+            </Card>
+          </Appear>
+        ) : null}
+
+        <Appear index={block++} style={styles.actions}>
+          <Button
+            label={product.isActive ? t('product.closeAccount') : t('product.reopen')}
+            icon={product.isActive ? 'archive-outline' : 'refresh'}
+            variant="secondary"
+            fullWidth
+            onPress={() => setProductActive(product.id, !product.isActive)}
+          />
+          <Button
+            label={t('common.delete')}
+            icon="trash-outline"
+            variant="danger"
+            fullWidth
+            onPress={() => void remove()}
+          />
+        </Appear>
+
+        <PaymentSheet
+          visible={paying}
+          onClose={() => setPaying(false)}
+          product={product}
+          due={due}
+          installment={dueInstallment}
+          installmentCount={installments.length}
+          today={today}
+          onPaid={onPaid}
+        />
+        <BottomSheet
+          visible={utilizationInfo}
+          onClose={() => setUtilizationInfo(false)}
+          title={t('product.utilization')}>
+          <Text variant="body" tone="secondary">
+            {t('product.utilizationExplain')}
+          </Text>
+        </BottomSheet>
+      </ProductForm>
+    </>
   );
 }
 

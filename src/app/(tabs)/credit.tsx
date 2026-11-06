@@ -33,8 +33,6 @@ export default function CreditScreen() {
   const active = statuses.filter((status) => status.product.isActive);
 
   const openProduct = (id: string) => router.push({ pathname: '/product/[id]', params: { id } });
-  const editProduct = (id: string) =>
-    router.push({ pathname: '/product/[id]/edit', params: { id } });
   const add = () => {
     haptics.light();
     router.push('/product/new');
@@ -119,9 +117,8 @@ export default function CreditScreen() {
             keyOf={(status) => status.product.id}
             labelOf={(status) => status.product.name}
             onPress={(status) => openProduct(status.product.id)}
-            renderCard={(status, isFront) => (
+            renderCard={(status) => (
               <ProductCard
-                onEdit={isFront ? () => editProduct(status.product.id) : undefined}
                 name={status.product.name}
                 issuer={status.product.issuer}
                 typeLabel={productTypeLabel(status.product, customTypes, t)}
@@ -154,7 +151,6 @@ export default function CreditScreen() {
                 typeLabel={productTypeLabel(status.product, customTypes, t)}
                 today={today}
                 onPress={() => openProduct(status.product.id)}
-                onEdit={() => editProduct(status.product.id)}
               />
             </View>
           ))}
