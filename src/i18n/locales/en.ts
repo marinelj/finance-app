@@ -112,6 +112,7 @@ const en = {
     days_after_statement: 'Days after statement',
   },
   credit: {
+    editProduct: 'Edit {{name}}',
     title: 'Credit',
     add: 'Add a card or loan',
     emptyTitle: 'No cards or loans yet',
