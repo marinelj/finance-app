@@ -33,6 +33,8 @@ import { parseDecimal, parseInteger, toInputText } from './numberInput';
 export type ProductFormValues = {
   name: string;
   issuer: string;
+  billEmail: string;
+  cardLast4: string;
   kind: ProductKind;
   preset: PresetKey | null;
   customTypeId: string | null;
@@ -111,6 +113,8 @@ export function defaultFormValues(options: {
   return {
     name: options.name ?? '',
     issuer: '',
+    billEmail: '',
+    cardLast4: '',
     kind,
     preset: presetKey,
     customTypeId: customType?.id ?? null,
@@ -165,6 +169,8 @@ export function formValuesFromProduct(
   return {
     name: product.name,
     issuer: product.issuer,
+    billEmail: product.billEmail ?? '',
+    cardLast4: product.cardLast4 ?? '',
     kind: product.kind,
     preset: product.preset,
     customTypeId: product.customTypeId,
@@ -201,6 +207,8 @@ const dayOfMonth = z.number().int().min(1).max(31).nullable();
 const shape = z.object({
   name: z.string(),
   issuer: z.string(),
+  billEmail: z.string(),
+  cardLast4: z.string(),
   kind: z.enum(PRODUCT_KINDS),
   preset: z.string().nullable(),
   customTypeId: z.string().nullable(),
@@ -250,6 +258,13 @@ export const productFormSchema = shape.superRefine((values, ctx) => {
   const name = values.name.trim();
   if (!name) fail('name', 'required');
   else if (name.length > MAX_NAME_LENGTH) fail('name', 'tooLong');
+
+  if (usesStatementCycle(values.kind)) {
+    const email = values.billEmail.trim().toLowerCase();
+    if (email && !z.email().max(254).safeParse(email).success) fail('billEmail', 'email');
+    if (values.cardLast4.trim() && !/^[0-9]{4}$/.test(values.cardLast4.trim()))
+      fail('cardLast4', 'last4');
+  }
 
   const loan = isLoanKind(values.kind);
   const scheduled = loan && values.useSchedule;
@@ -387,6 +402,8 @@ export function toProductFields(
   const fields: ProductFields = {
     name: values.name.trim(),
     issuer: values.issuer.trim(),
+    billEmail: loan ? null : text(values.billEmail.toLowerCase()),
+    cardLast4: loan ? null : text(values.cardLast4),
     kind: values.kind,
     preset: values.preset,
     customTypeId: values.customTypeId,

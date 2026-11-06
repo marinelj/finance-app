@@ -31,6 +31,8 @@ export type CreditProduct = {
   id: string;
   name: string;
   issuer: string;
+  billEmail?: string | null;
+  cardLast4?: string | null;
   kind: ProductKind;
   currency: CurrencyCode;
   creditLimit: number;

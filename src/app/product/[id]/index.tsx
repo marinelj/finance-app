@@ -162,6 +162,8 @@ export default function ProductDetailScreen() {
       }),
     ]);
   }
+  if (product.billEmail) details.push([t('form.billEmail'), product.billEmail]);
+  if (product.cardLast4) details.push([t('form.cardLast4'), product.cardLast4]);
   if (rateText) details.push([t('product.interest'), rateText]);
   details.push([
     t('product.gracePeriod'),

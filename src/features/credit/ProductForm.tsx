@@ -425,6 +425,32 @@ export function ProductForm({
           </>
         )}
 
+        {!loan ? (
+          <Appear index={section++}>
+            <FormSection title={t('form.billDelivery')}>
+              <TextField
+                label={t('form.billEmail')}
+                value={values.billEmail}
+                onChangeText={(text) => set('billEmail', text)}
+                keyboardType="email-address"
+                plain
+                hint={t('form.billEmailHint')}
+                error={error('billEmail')}
+                {...optional}
+              />
+              <TextField
+                label={t('form.cardLast4')}
+                value={values.cardLast4}
+                onChangeText={(text) => set('cardLast4', text)}
+                keyboardType="number-pad"
+                hint={t('form.cardLast4Hint')}
+                error={error('cardLast4')}
+                {...optional}
+              />
+            </FormSection>
+          </Appear>
+        ) : null}
+
         <Appear index={section++}>
           <FormSection title={t('form.more')}>
             <TextField

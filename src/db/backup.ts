@@ -2,7 +2,6 @@ import { getTableColumns, type Table } from 'drizzle-orm';
 import { z } from 'zod';
 
 import { getDb } from './client';
-import journal from '../../drizzle/meta/_journal.json';
 import {
   bondHoldings,
   cashAccounts,
@@ -45,8 +44,8 @@ const TABLES: [string, Table][] = [
 
 const SETTING_KEYS = ['preferences', 'riskProfile', 'planner', 'demo'];
 
-/** The number of migrations: a backup from a newer app version cannot be restored here. */
-export const BACKUP_SCHEMA = journal.entries.length;
+/** Payload format version. Additive, nullable schema changes stay compatible with old clients. */
+export const BACKUP_SCHEMA = 3;
 
 const payloadSchema = z.object({
   app: z.literal('finance-app'),

@@ -184,6 +184,11 @@ const zhHans: Translation = {
     cannotUndo: '只能撤销最近一笔还款。',
   },
   form: {
+    billDelivery: '账单投递',
+    billEmail: '账单邮箱',
+    billEmailHint: '接收这张卡账单的邮箱地址。',
+    cardLast4: '卡号后四位',
+    cardLast4Hint: '仅保存卡号后四位。',
     titleNew: '添加信用卡或贷款',
     titleEdit: '编辑',
     chooseType: '你想添加什么？',
@@ -250,6 +255,8 @@ const zhHans: Translation = {
     fixErrors: '请检查标出的内容。',
     saved: '已保存',
     errors: {
+      email: '请输入有效的邮箱地址。',
+      last4: '请输入恰好四位数字。',
       required: '必填',
       number: '请输入数字',
       nonNegative: '不能为负数',

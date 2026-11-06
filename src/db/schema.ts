@@ -62,6 +62,8 @@ export const creditProducts = sqliteTable(
     id: text('id').primaryKey(),
     name: text('name').notNull(),
     issuer: text('issuer').notNull().default(''),
+    billEmail: text('bill_email'),
+    cardLast4: text('card_last4'),
     kind: text('kind', { enum: PRODUCT_KINDS }).notNull(),
     /** Built-in preset this product started from (huabei, jiebei, …), if any. */
     preset: text('preset', { enum: PRESET_KEYS }),

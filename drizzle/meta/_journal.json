@@ -22,6 +22,13 @@
       "when": 1792603915182,
       "tag": "0002_net_worth_snapshots",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1794000000000,
+      "tag": "0003_bill_delivery",
+      "breakpoints": true
     }
   ]
 }

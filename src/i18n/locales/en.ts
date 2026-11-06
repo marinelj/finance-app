@@ -186,6 +186,11 @@ const en = {
     cannotUndo: 'Only the latest payment can be undone.',
   },
   form: {
+    billDelivery: 'Bill delivery',
+    billEmail: 'Bill email',
+    billEmailHint: 'The address this card’s statements are sent to.',
+    cardLast4: 'Card last 4 digits',
+    cardLast4Hint: 'Only the last 4 digits are stored.',
     titleNew: 'Add a card or loan',
     titleEdit: 'Edit',
     chooseType: 'What would you like to add?',
@@ -252,6 +257,8 @@ const en = {
     fixErrors: 'Please check the highlighted fields.',
     saved: 'Saved',
     errors: {
+      email: 'Enter a valid email address.',
+      last4: 'Enter exactly 4 digits.',
       required: 'Required',
       number: 'Enter a number',
       nonNegative: 'Can’t be negative',
