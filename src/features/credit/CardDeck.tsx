@@ -26,7 +26,7 @@ type CardDeckProps<T> = {
   items: T[];
   keyOf: (item: T) => string;
   labelOf: (item: T) => string;
-  renderCard: (item: T) => ReactNode;
+  renderCard: (item: T, isFront: boolean) => ReactNode;
   onPress: (item: T) => void;
 };
 
@@ -119,7 +119,7 @@ export function CardDeck<T>({ items, keyOf, labelOf, renderCard, onPress }: Card
               accessibilityHint={
                 count > 1 ? (isWeb ? t('credit.deckHintKeys') : t('credit.deckHint')) : undefined
               }>
-              {renderCard(item)}
+              {renderCard(item, position === 0)}
             </DeckCard>
           ))}
       </View>

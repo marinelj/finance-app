@@ -111,6 +111,7 @@ const zhHans: Translation = {
     days_after_statement: '账单日后若干天',
   },
   credit: {
+    editProduct: '编辑{{name}}',
     title: '信用',
     add: '添加信用卡或贷款',
     emptyTitle: '还没有信用卡或贷款',
