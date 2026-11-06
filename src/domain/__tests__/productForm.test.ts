@@ -338,3 +338,16 @@ describe('toProductFields for loans', () => {
     expect(preview?.[0].dueDate).toBe('2026-08-21');
   });
 });
+
+it('ignores legacy repayment methods and generates equal payments without writing the column', () => {
+  const values = loanForm();
+  const { fields } = toProductFields(values, today);
+  const legacy = { ...fields, repaymentMethod: 'interest_first' };
+  const edited = formValuesFromProduct(legacy, true, today);
+  expect(edited).not.toHaveProperty('repaymentMethod');
+  const result = toProductFields(edited, today);
+  expect(result.fields).not.toHaveProperty('repaymentMethod');
+  const schedule = previewSchedule(edited)!;
+  expect(schedule[0].principal).toBeGreaterThan(0);
+  expect(schedule[0].amount).toBeCloseTo(schedule[1].amount, 2);
+});

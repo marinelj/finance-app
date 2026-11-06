@@ -24,13 +24,7 @@ import { Text } from '@/components/Text';
 import { useStyles } from '@/design/theme';
 import { space, type Theme } from '@/design/tokens';
 import { saveProduct } from '@/db/credit';
-import {
-  aprPercent,
-  dailyRatePercent,
-  REPAYMENT_METHODS,
-  type Installment,
-  type RateUnit,
-} from '@/domain/credit';
+import { aprPercent, dailyRatePercent, type Installment, type RateUnit } from '@/domain/credit';
 import { nextDue } from '@/domain/creditStatus';
 import type { LocalDate } from '@/domain/dates';
 import { totalInterest } from '@/domain/loans';
@@ -301,18 +295,6 @@ export function ProductForm({
                     error={error('loanTermMonths')}
                   />
                   {rateFields}
-                  <Text variant="caption" tone="muted">
-                    {t('form.repaymentMethod')}
-                  </Text>
-                  <ChipGroup
-                    accessibilityLabel={t('form.repaymentMethod')}
-                    value={values.repaymentMethod}
-                    onChange={(method) => set('repaymentMethod', method)}
-                    options={REPAYMENT_METHODS.map((method) => ({
-                      value: method,
-                      label: t(`repaymentMethods.${method}`),
-                    }))}
-                  />
                   <SelectField
                     label={t('form.repaymentDay')}
                     value={dayValueLabel(values.repaymentDay, t)}

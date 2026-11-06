@@ -79,11 +79,6 @@ const en = {
     weilidai: 'WeBank · daily interest loan',
     other: 'Anything else you owe',
   },
-  repaymentMethods: {
-    equal_installment: 'Equal payments',
-    equal_principal: 'Equal principal',
-    interest_first: 'Interest first',
-  },
   rateUnits: {
     apr: 'Per year',
     daily: 'Per day',
@@ -239,7 +234,6 @@ const en = {
     loanPrincipal: 'Amount borrowed',
     loanStartDate: 'Borrowed on',
     loanTermMonths: 'Term in months',
-    repaymentMethod: 'Repayment method',
     scheduleSummary: '{{count}} payments, first {{first}}, total interest {{interest}}',
     scheduleBalance: 'Still owed today: {{amount}}',
     notes: 'Notes',

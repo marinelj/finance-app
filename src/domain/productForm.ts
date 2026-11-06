@@ -12,14 +12,12 @@ import {
   PRODUCT_KINDS,
   PRODUCT_PRESETS,
   RATE_UNITS,
-  REPAYMENT_METHODS,
   type CreditProduct,
   type DueRuleType,
   type Installment,
   type PresetKey,
   type ProductKind,
   type RateUnit,
-  type RepaymentMethod,
 } from './credit';
 import { isLocalDate, parseLocalDate, type LocalDate } from './dates';
 import { generateSchedule, type ScheduledInstallment } from './loans';
@@ -61,7 +59,6 @@ export type ProductFormValues = {
   loanPrincipal: string;
   loanStartDate: LocalDate;
   loanTermMonths: string;
-  repaymentMethod: RepaymentMethod;
   notes: string;
   isActive: boolean;
 };
@@ -139,7 +136,6 @@ export function defaultFormValues(options: {
     loanPrincipal: '',
     loanStartDate: today,
     loanTermMonths: toInputText(preset.loanTermMonths ?? (loan ? 12 : null)),
-    repaymentMethod: preset.repaymentMethod ?? 'equal_installment',
     notes: '',
     isActive: true,
   };
@@ -157,7 +153,6 @@ export type ProductFields = Omit<CreditProduct, 'id'> & {
   loanPrincipal: number | null;
   loanStartDate: LocalDate | null;
   loanTermMonths: number | null;
-  repaymentMethod: RepaymentMethod | null;
   notes: string | null;
 };
 
@@ -195,7 +190,6 @@ export function formValuesFromProduct(
     loanPrincipal: money(product.loanPrincipal),
     loanStartDate: product.loanStartDate ?? today,
     loanTermMonths: toInputText(product.loanTermMonths),
-    repaymentMethod: product.repaymentMethod ?? 'equal_installment',
     notes: product.notes ?? '',
     isActive: product.isActive,
   };
@@ -232,7 +226,6 @@ const shape = z.object({
   loanPrincipal: z.string(),
   loanStartDate: z.string(),
   loanTermMonths: z.string(),
-  repaymentMethod: z.enum(REPAYMENT_METHODS),
   notes: z.string(),
   isActive: z.boolean(),
 });
@@ -361,7 +354,6 @@ const LOAN_TERM_FIELDS = [
   'interestRateUnit',
   'loanStartDate',
   'loanTermMonths',
-  'repaymentMethod',
   'repaymentDay',
   'currency',
 ] as const;
@@ -424,7 +416,6 @@ export function toProductFields(
     loanPrincipal: scheduled ? money(number(values.loanPrincipal)) : null,
     loanStartDate: scheduled ? values.loanStartDate : null,
     loanTermMonths: scheduled ? parseInteger(values.loanTermMonths) : null,
-    repaymentMethod: scheduled ? values.repaymentMethod : null,
     paidThrough: existing?.product.paidThrough ?? null,
     notes: text(values.notes),
     isActive: values.isActive,
@@ -475,7 +466,7 @@ function buildSchedule(
     startDate: fields.loanStartDate ?? today,
     termMonths: fields.loanTermMonths ?? 0,
     repaymentDay: fields.repaymentDay,
-    method: fields.repaymentMethod ?? 'equal_installment',
+    method: 'equal_installment',
     currency: fields.currency,
   });
   const paidBefore = new Map(
@@ -508,7 +499,7 @@ export function previewSchedule(values: ProductFormValues): ScheduledInstallment
     startDate: values.loanStartDate,
     termMonths: term,
     repaymentDay: values.repaymentDay,
-    method: values.repaymentMethod,
+    method: 'equal_installment',
     currency: values.currency,
   });
 }

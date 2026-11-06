@@ -78,11 +78,6 @@ const zhHans: Translation = {
     weilidai: '微众银行 · 按日计息贷款',
     other: '其他欠款',
   },
-  repaymentMethods: {
-    equal_installment: '等额本息',
-    equal_principal: '等额本金',
-    interest_first: '先息后本',
-  },
   rateUnits: {
     apr: '年利率',
     daily: '日利率',
@@ -237,7 +232,6 @@ const zhHans: Translation = {
     loanPrincipal: '借款金额',
     loanStartDate: '借款日期',
     loanTermMonths: '期数（月）',
-    repaymentMethod: '还款方式',
     scheduleSummary: '共 {{count}} 期，首期 {{first}}，总利息 {{interest}}',
     scheduleBalance: '截至今天待还本金：{{amount}}',
     notes: '备注',
