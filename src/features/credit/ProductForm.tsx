@@ -214,7 +214,6 @@ export function ProductForm({
         <Appear index={section++}>
           <ProductCard
             name={values.name.trim() || typeLabel}
-            issuer={values.issuer.trim()}
             typeLabel={typeLabel}
             emoji={values.emoji}
             color={values.color}
@@ -235,14 +234,6 @@ export function ProductForm({
               placeholder={t('form.namePlaceholder')}
               error={error('name')}
               maxLength={40}
-            />
-            <TextField
-              label={t('form.issuer')}
-              value={values.issuer}
-              onChangeText={(text) => set('issuer', text)}
-              placeholder={t('form.issuerPlaceholder')}
-              maxLength={40}
-              {...optional}
             />
             <Text variant="caption" tone="muted">
               {t('form.currency')}

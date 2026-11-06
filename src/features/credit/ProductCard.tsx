@@ -17,7 +17,6 @@ export const PRODUCT_CARD_HEIGHT = 196;
 
 export type ProductCardProps = {
   name: string;
-  issuer: string;
   typeLabel: string;
   emoji: string;
   color: string;
@@ -32,7 +31,6 @@ export type ProductCardProps = {
 /** Card art: the product's colour as a gradient, its name, and what is due next. */
 export function ProductCard({
   name,
-  issuer,
   typeLabel,
   emoji,
   color,
@@ -72,11 +70,6 @@ export function ProductCard({
         <Text variant="title" numberOfLines={1} style={textColor}>
           {name}
         </Text>
-        {issuer ? (
-          <Text variant="caption" numberOfLines={1} style={softColor}>
-            {issuer}
-          </Text>
-        ) : null}
       </View>
 
       <View style={styles.bottom}>
