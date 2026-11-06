@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { type ReactNode, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   KeyboardAvoidingView,
@@ -65,6 +65,8 @@ type ProductFormProps = {
   typeLabel: string;
   today: LocalDate;
   onSaved: (id: string) => void;
+  /** Extra content below the fields, e.g. payments on a product's own page. */
+  children?: ReactNode;
 };
 
 type DayField = 'statementDay' | 'dueDay' | 'repaymentDay';
@@ -77,6 +79,7 @@ export function ProductForm({
   typeLabel,
   today,
   onSaved,
+  children,
 }: ProductFormProps) {
   const { t } = useTranslation();
   const styles = useStyles(makeStyles);
@@ -400,26 +403,6 @@ export function ProductForm({
                   value={values.hasGracePeriod}
                   onChange={(on) => set('hasGracePeriod', on)}
                 />
-                {values.hasGracePeriod ? (
-                  <TextField
-                    label={t('form.graceNote')}
-                    value={values.graceNote}
-                    onChangeText={(text) => set('graceNote', text)}
-                    placeholder={t('form.graceNotePlaceholder')}
-                    maxLength={60}
-                    {...optional}
-                  />
-                ) : null}
-                {rateFields}
-                {amountField('annualFee', t('form.annualFee'), { optional: true })}
-                <TextField
-                  label={t('form.feeWaiver')}
-                  value={values.feeWaiver}
-                  onChangeText={(text) => set('feeWaiver', text)}
-                  placeholder={t('form.feeWaiverPlaceholder')}
-                  maxLength={80}
-                  {...optional}
-                />
               </FormSection>
             </Appear>
           </>
@@ -471,6 +454,7 @@ export function ProductForm({
             ) : null}
           </FormSection>
         </Appear>
+        {children}
       </ScrollView>
 
       <View

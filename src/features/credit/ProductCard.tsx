@@ -13,8 +13,6 @@ import type { CurrencyCode } from '@/domain/money';
 import { formatDate } from '@/lib/format';
 import { usePreferences } from '@/state/preferences';
 
-import { ProductEditButton } from './ProductEditButton';
-
 export const PRODUCT_CARD_HEIGHT = 196;
 
 export type ProductCardProps = {
@@ -29,7 +27,6 @@ export type ProductCardProps = {
   isActive?: boolean;
   today: string;
   style?: StyleProp<ViewStyle>;
-  onEdit?: () => void;
 };
 
 /** Card art: the product's colour as a gradient, its name, and what is due next. */
@@ -45,7 +42,6 @@ export function ProductCard({
   isActive = true,
   today,
   style,
-  onEdit,
 }: ProductCardProps) {
   const { t } = useTranslation();
   const styles = useStyles(makeStyles);
@@ -70,14 +66,6 @@ export function ProductCard({
           {typeLabel}
         </Text>
         {due && isActive ? <DueBadge daysLeft={due.daysLeft} size="sm" /> : null}
-        {onEdit ? (
-          <ProductEditButton
-            name={name}
-            onPress={onEdit}
-            color={palette.text}
-            backgroundColor={palette.chip}
-          />
-        ) : null}
       </View>
 
       <View style={styles.names}>
