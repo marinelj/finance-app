@@ -31,6 +31,8 @@ export type CreditProduct = {
   id: string;
   name: string;
   issuer: string;
+  billEmail?: string | null;
+  cardLast4?: string | null;
   kind: ProductKind;
   currency: CurrencyCode;
   creditLimit: number;
@@ -104,7 +106,6 @@ export type ProductPreset = {
   dueDaysAfterStatement?: number;
   interestRate?: number;
   interestRateUnit?: RateUnit;
-  repaymentMethod?: RepaymentMethod;
   loanTermMonths?: number;
 };
 
@@ -162,7 +163,6 @@ export const PRODUCT_PRESETS: Record<PresetKey, ProductPreset> = {
     hasGracePeriod: false,
     interestRate: 0.03,
     interestRateUnit: 'daily',
-    repaymentMethod: 'equal_installment',
     loanTermMonths: 12,
   },
   wangshangdai: {
@@ -174,7 +174,6 @@ export const PRODUCT_PRESETS: Record<PresetKey, ProductPreset> = {
     hasGracePeriod: false,
     interestRate: 0.04,
     interestRateUnit: 'daily',
-    repaymentMethod: 'equal_installment',
     loanTermMonths: 12,
   },
   weilidai: {
@@ -186,7 +185,6 @@ export const PRODUCT_PRESETS: Record<PresetKey, ProductPreset> = {
     hasGracePeriod: false,
     interestRate: 0.04,
     interestRateUnit: 'daily',
-    repaymentMethod: 'equal_installment',
     loanTermMonths: 10,
   },
   other: {

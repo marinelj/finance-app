@@ -12,14 +12,12 @@ import {
   PRODUCT_KINDS,
   PRODUCT_PRESETS,
   RATE_UNITS,
-  REPAYMENT_METHODS,
   type CreditProduct,
   type DueRuleType,
   type Installment,
   type PresetKey,
   type ProductKind,
   type RateUnit,
-  type RepaymentMethod,
 } from './credit';
 import { isLocalDate, parseLocalDate, type LocalDate } from './dates';
 import { generateSchedule, type ScheduledInstallment } from './loans';
@@ -35,6 +33,8 @@ import { parseDecimal, parseInteger, toInputText } from './numberInput';
 export type ProductFormValues = {
   name: string;
   issuer: string;
+  billEmail: string;
+  cardLast4: string;
   kind: ProductKind;
   preset: PresetKey | null;
   customTypeId: string | null;
@@ -61,7 +61,6 @@ export type ProductFormValues = {
   loanPrincipal: string;
   loanStartDate: LocalDate;
   loanTermMonths: string;
-  repaymentMethod: RepaymentMethod;
   notes: string;
   isActive: boolean;
 };
@@ -114,6 +113,8 @@ export function defaultFormValues(options: {
   return {
     name: options.name ?? '',
     issuer: '',
+    billEmail: '',
+    cardLast4: '',
     kind,
     preset: presetKey,
     customTypeId: customType?.id ?? null,
@@ -139,7 +140,6 @@ export function defaultFormValues(options: {
     loanPrincipal: '',
     loanStartDate: today,
     loanTermMonths: toInputText(preset.loanTermMonths ?? (loan ? 12 : null)),
-    repaymentMethod: preset.repaymentMethod ?? 'equal_installment',
     notes: '',
     isActive: true,
   };
@@ -157,7 +157,6 @@ export type ProductFields = Omit<CreditProduct, 'id'> & {
   loanPrincipal: number | null;
   loanStartDate: LocalDate | null;
   loanTermMonths: number | null;
-  repaymentMethod: RepaymentMethod | null;
   notes: string | null;
 };
 
@@ -170,6 +169,8 @@ export function formValuesFromProduct(
   return {
     name: product.name,
     issuer: product.issuer,
+    billEmail: product.billEmail ?? '',
+    cardLast4: product.cardLast4 ?? '',
     kind: product.kind,
     preset: product.preset,
     customTypeId: product.customTypeId,
@@ -195,7 +196,6 @@ export function formValuesFromProduct(
     loanPrincipal: money(product.loanPrincipal),
     loanStartDate: product.loanStartDate ?? today,
     loanTermMonths: toInputText(product.loanTermMonths),
-    repaymentMethod: product.repaymentMethod ?? 'equal_installment',
     notes: product.notes ?? '',
     isActive: product.isActive,
   };
@@ -207,6 +207,8 @@ const dayOfMonth = z.number().int().min(1).max(31).nullable();
 const shape = z.object({
   name: z.string(),
   issuer: z.string(),
+  billEmail: z.string(),
+  cardLast4: z.string(),
   kind: z.enum(PRODUCT_KINDS),
   preset: z.string().nullable(),
   customTypeId: z.string().nullable(),
@@ -232,7 +234,6 @@ const shape = z.object({
   loanPrincipal: z.string(),
   loanStartDate: z.string(),
   loanTermMonths: z.string(),
-  repaymentMethod: z.enum(REPAYMENT_METHODS),
   notes: z.string(),
   isActive: z.boolean(),
 });
@@ -257,6 +258,13 @@ export const productFormSchema = shape.superRefine((values, ctx) => {
   const name = values.name.trim();
   if (!name) fail('name', 'required');
   else if (name.length > MAX_NAME_LENGTH) fail('name', 'tooLong');
+
+  if (usesStatementCycle(values.kind)) {
+    const email = values.billEmail.trim().toLowerCase();
+    if (email && !z.email().max(254).safeParse(email).success) fail('billEmail', 'email');
+    if (values.cardLast4.trim() && !/^[0-9]{4}$/.test(values.cardLast4.trim()))
+      fail('cardLast4', 'last4');
+  }
 
   const loan = isLoanKind(values.kind);
   const scheduled = loan && values.useSchedule;
@@ -361,7 +369,6 @@ const LOAN_TERM_FIELDS = [
   'interestRateUnit',
   'loanStartDate',
   'loanTermMonths',
-  'repaymentMethod',
   'repaymentDay',
   'currency',
 ] as const;
@@ -395,6 +402,8 @@ export function toProductFields(
   const fields: ProductFields = {
     name: values.name.trim(),
     issuer: values.issuer.trim(),
+    billEmail: loan ? null : text(values.billEmail.toLowerCase()),
+    cardLast4: loan ? null : text(values.cardLast4),
     kind: values.kind,
     preset: values.preset,
     customTypeId: values.customTypeId,
@@ -424,7 +433,6 @@ export function toProductFields(
     loanPrincipal: scheduled ? money(number(values.loanPrincipal)) : null,
     loanStartDate: scheduled ? values.loanStartDate : null,
     loanTermMonths: scheduled ? parseInteger(values.loanTermMonths) : null,
-    repaymentMethod: scheduled ? values.repaymentMethod : null,
     paidThrough: existing?.product.paidThrough ?? null,
     notes: text(values.notes),
     isActive: values.isActive,
@@ -475,7 +483,7 @@ function buildSchedule(
     startDate: fields.loanStartDate ?? today,
     termMonths: fields.loanTermMonths ?? 0,
     repaymentDay: fields.repaymentDay,
-    method: fields.repaymentMethod ?? 'equal_installment',
+    method: 'equal_installment',
     currency: fields.currency,
   });
   const paidBefore = new Map(
@@ -508,7 +516,7 @@ export function previewSchedule(values: ProductFormValues): ScheduledInstallment
     startDate: values.loanStartDate,
     termMonths: term,
     repaymentDay: values.repaymentDay,
-    method: values.repaymentMethod,
+    method: 'equal_installment',
     currency: values.currency,
   });
 }

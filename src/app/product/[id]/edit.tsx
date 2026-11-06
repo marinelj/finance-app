@@ -14,7 +14,7 @@ export default function EditProductScreen() {
   const { t } = useTranslation();
   const router = useRouter();
   const toast = useToast();
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, section } = useLocalSearchParams<{ id: string; section?: string }>();
   const { customTypes, today } = useCreditData();
   const data = useProduct(id);
 
@@ -43,6 +43,7 @@ export default function EditProductScreen() {
     <>
       {header}
       <ProductForm
+        initialSection={section === 'billing' ? 'billing' : undefined}
         initialValues={formValuesFromProduct(product, installments.length > 0, today)}
         existing={{ id: product.id, product, installments }}
         typeLabel={productTypeLabel(product, customTypes, t)}

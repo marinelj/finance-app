@@ -163,14 +163,23 @@ export class SyncEngine<P extends Snapshot> {
       return;
     }
     if (this.status.phase === 'conflict') return;
-    const local = this.deps.collect();
-    const change = localChange(fingerprint(local), account.syncedHash);
-    if (change === 'none' && !checkServer) return;
+    if (
+      localChange(fingerprint(this.deps.collect()), account.syncedHash) === 'none' &&
+      !checkServer
+    )
+      return;
 
     const client = this.deps.createClient(account.serverUrl);
     this.set({ phase: 'syncing' });
     try {
       const remote = await client.revision(account.token);
+      if ((await this.deps.readAccount())?.token !== account.token) {
+        await this.load();
+        return;
+      }
+      // The user may have saved while the revision request was in flight.
+      const local = this.deps.collect();
+      const change = localChange(fingerprint(local), account.syncedHash);
       const serverChanged = remote !== account.revision;
 
       if (remote === 0) {
@@ -204,7 +213,17 @@ export class SyncEngine<P extends Snapshot> {
   }
 
   private async pull(account: SyncAccount, client: SyncClient) {
+    const before = fingerprint(this.deps.collect());
     const payload = await client.download(account.token);
+    if ((await this.deps.readAccount())?.token !== account.token) {
+      await this.load();
+      return;
+    }
+    // A network response must never overwrite a user edit made after the request began.
+    if (localChange(fingerprint(this.deps.collect()), before) === 'data') {
+      this.set({ phase: 'conflict' });
+      return;
+    }
     this.deps.apply(payload);
     await this.markSynced(account, payload.revision, fingerprint(this.deps.collect()));
   }

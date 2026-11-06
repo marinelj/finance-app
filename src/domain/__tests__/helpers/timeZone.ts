@@ -9,8 +9,12 @@ import path from 'node:path';
 export function evalInTimeZone(timeZone: string, modulePath: string, expression: string): string {
   const file = path.resolve(modulePath);
   const script = `import(${JSON.stringify(file)}).then((m) => process.stdout.write(String(${expression})));`;
-  return execFileSync(process.execPath, ['--no-warnings', '--input-type=module', '-e', script], {
-    env: { ...process.env, TZ: timeZone },
-    encoding: 'utf8',
-  });
+  return execFileSync(
+    process.execPath,
+    ['--no-warnings', '--experimental-strip-types', '--input-type=module', '-e', script],
+    {
+      env: { ...process.env, TZ: timeZone },
+      encoding: 'utf8',
+    }
+  );
 }

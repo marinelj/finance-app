@@ -1,6 +1,5 @@
 import { eq } from 'drizzle-orm';
 
-import type { RiskAnswers } from '@/domain/riskProfile';
 import type { WealthKind, WealthRecord } from '@/domain/wealthForms';
 
 import { getDb } from './client';
@@ -14,7 +13,6 @@ import {
   insurancePolicies,
   stockHoldings,
 } from './schema';
-import { readSetting, writeSetting } from './settings';
 
 export const WEALTH_TABLES = {
   income: incomes,
@@ -68,16 +66,4 @@ export function saveWealthItem(kind: WealthKind, id: string | null, record: Weal
 export function deleteWealthItem(kind: WealthKind, id: string): void {
   const table = WEALTH_TABLES[kind] as unknown as AnyWealthTable;
   getDb().delete(table).where(eq(table.id, id)).run();
-}
-
-const RISK_KEY = 'riskProfile';
-
-export type StoredRiskProfile = { answers: RiskAnswers; completedAt: string };
-
-export function readRiskProfile(): StoredRiskProfile | null {
-  return readSetting<StoredRiskProfile>(RISK_KEY);
-}
-
-export function saveRiskProfile(answers: RiskAnswers): void {
-  writeSetting(RISK_KEY, { answers, completedAt: nowIso() } satisfies StoredRiskProfile);
 }

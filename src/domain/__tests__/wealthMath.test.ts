@@ -1,5 +1,4 @@
 import { amortizedPayment, monthlyEquivalent, monthlyHousingCost } from '../cashflow';
-import { scoreRisk, isCompleteAnswers, type RiskAnswers } from '../riskProfile';
 import {
   annualDividendIncome,
   dividendMonths,
@@ -87,62 +86,5 @@ describe('cash flow', () => {
       })
     ).toBeCloseTo(4270.16, 2);
     expect(monthlyHousingCost({ ...base, kind: 'owned' })).toBe(0);
-  });
-});
-
-describe('risk profile', () => {
-  const answers: RiskAnswers = {
-    age: 32,
-    horizon: 'over15',
-    goal: 'growth',
-    dropReaction: 'hold',
-    incomeStability: 'stable',
-  };
-
-  it('adds up points per question', () => {
-    const result = scoreRisk(answers);
-    expect(result.points).toEqual({
-      age: 3,
-      horizon: 4,
-      goal: 4,
-      dropReaction: 3,
-      incomeStability: 3,
-    });
-    expect(result.score).toBe(17);
-    expect(result.profile).toBe('aggressive');
-    expect(result.cappedBy).toEqual([]);
-  });
-
-  it('maps scores onto five profiles', () => {
-    expect(
-      scoreRisk({
-        age: 66,
-        horizon: '3to7',
-        goal: 'preserve',
-        dropReaction: 'sell_some',
-        incomeStability: 'variable',
-      }).profile
-    ).toBe('conservative');
-    expect(scoreRisk({ ...answers, goal: 'balanced', dropReaction: 'sell_some' }).profile).toBe(
-      'balanced'
-    );
-    expect(scoreRisk({ ...answers, goal: 'balanced' }).profile).toBe('growth');
-  });
-
-  it('caps the profile for money needed soon or selling in a drop', () => {
-    expect(scoreRisk({ ...answers, horizon: 'under3' })).toMatchObject({
-      profile: 'cautious',
-      cappedBy: ['shortHorizon'],
-    });
-    expect(scoreRisk({ ...answers, horizon: 'under3', dropReaction: 'sell_all' }).cappedBy).toEqual(
-      ['shortHorizon', 'sellsInDrop']
-    );
-  });
-
-  it('checks that every question is answered', () => {
-    expect(isCompleteAnswers(answers)).toBe(true);
-    expect(isCompleteAnswers({ ...answers, age: 5 })).toBe(false);
-    expect(isCompleteAnswers({ age: 30 })).toBe(false);
-    expect(isCompleteAnswers(null)).toBe(false);
   });
 });

@@ -15,9 +15,7 @@ import { Text } from '@/components/Text';
 import { useStyles, useTheme } from '@/design/theme';
 import type { AccentTone, Theme } from '@/design/tokens';
 import type { CurrencyCode } from '@/domain/money';
-import { scoreRisk } from '@/domain/riskProfile';
 import { WEALTH_KINDS, type WealthKind } from '@/domain/wealthForms';
-import { AllocationCard } from '@/features/plan/AllocationCard';
 import { CashFlowCard } from '@/features/plan/CashFlowCard';
 import { HealthCard } from '@/features/plan/HealthCard';
 import { NetWorthTrend } from '@/features/plan/NetWorthTrend';
@@ -40,7 +38,6 @@ export default function WealthScreen() {
   const { summary: credit, fx } = useCreditData();
   const { prefs } = usePreferences();
   const home = prefs.homeCurrency;
-  const risk = data.risk ? scoreRisk(data.risk.answers) : null;
   const { overview, netWorth } = plan;
   const hasInputs = WEALTH_KINDS.some((kind) => rowsOf(data, kind).length > 0);
 
@@ -118,16 +115,6 @@ export default function WealthScreen() {
               <PassiveIncomeCard passive={plan.passive} />
             </Card>
           </Appear>
-
-          <Appear index={block++}>
-            <Card style={styles.section}>
-              <SectionHeader
-                title={t('plan.allocation')}
-                action={{ label: t('plan.seePlan'), onPress: () => router.push('/plan') }}
-              />
-              <AllocationCard allocation={plan.allocation} />
-            </Card>
-          </Appear>
         </>
       ) : (
         <Appear index={block++}>
@@ -141,37 +128,6 @@ export default function WealthScreen() {
           </Card>
         </Appear>
       )}
-
-      <Appear index={block++}>
-        <PressableScale
-          onPress={() => router.push('/wealth/risk')}
-          haptic="light"
-          scaleTo={0.98}
-          accessibilityRole="button"
-          accessibilityLabel={
-            risk
-              ? `${t('wealth.riskProfile')}, ${t(`risk.profiles.${risk.profile}`)}`
-              : t('wealth.riskTake')
-          }>
-          <Card variant="tinted" tone="sky" style={styles.riskCard}>
-            <IconChip icon="speedometer" tone="sky" size={44} />
-            <View style={styles.flex}>
-              <Text variant="caption" tone="muted">
-                {t('wealth.riskProfile')}
-              </Text>
-              <Text variant="headline">
-                {risk ? t(`risk.profiles.${risk.profile}`) : t('wealth.riskTake')}
-              </Text>
-              {risk ? (
-                <Text variant="caption" tone="secondary" numberOfLines={2}>
-                  {t(`risk.profileHints.${risk.profile}`)}
-                </Text>
-              ) : null}
-            </View>
-            <Icon name="chevron-forward" size={18} color={colors.textMuted} />
-          </Card>
-        </PressableScale>
-      </Appear>
 
       <Appear index={block++}>
         <Card style={styles.list}>
@@ -308,7 +264,6 @@ const makeStyles = ({ space }: Theme) =>
     },
     section: { gap: space.md },
     flex: { flex: 1, gap: 2 },
-    riskCard: { flexDirection: 'row', alignItems: 'center', gap: space.md },
     list: { gap: space.sm },
     row: { flexDirection: 'row', alignItems: 'center', gap: space.md, minHeight: 60 },
     amount: { alignItems: 'flex-end' },

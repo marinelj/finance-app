@@ -61,7 +61,8 @@ export default function ProductDetailScreen() {
     );
   }
 
-  const { product, due, utilization, available, installments, payments, customType } = data;
+  const { product, due, utilization, available, installments, payments, customType, latestBill } =
+    data;
   const typeLabel = productTypeLabel(product, customTypes, t);
   const money = (amount: number) => formatMoney(amount, product.currency, { locale: language });
   const date = (value: string, weekday = false) => formatDate(value, language, { today, weekday });
@@ -127,6 +128,12 @@ export default function ProductDetailScreen() {
 
   const floatToday = floatForPurchase(product, today);
 
+  const edit = (section?: 'billing') =>
+    router.push({
+      pathname: '/product/[id]/edit',
+      params: { id: product.id, ...(section ? { section } : {}) },
+    });
+
   const details: [string, string][] = [
     [t('product.type'), customType ? `${typeLabel} · ${t(`kinds.${product.kind}`)}` : typeLabel],
     [t('product.currency'), product.currency],
@@ -156,6 +163,8 @@ export default function ProductDetailScreen() {
       }),
     ]);
   }
+  if (product.billEmail) details.push([t('form.billEmail'), product.billEmail]);
+  if (product.cardLast4) details.push([t('form.cardLast4'), product.cardLast4]);
   if (rateText) details.push([t('product.interest'), rateText]);
   details.push([
     t('product.gracePeriod'),
@@ -195,6 +204,31 @@ export default function ProductDetailScreen() {
           today={today}
         />
       </Appear>
+
+      <Button
+        label={t('common.edit')}
+        icon="pencil-outline"
+        variant="secondary"
+        onPress={() => edit()}
+      />
+
+      {latestBill ? (
+        <Card style={styles.section}>
+          <SectionHeader
+            title={t('product.latestEmailBill', {
+              date: date(latestBill.statementDate ?? latestBill.receivedAt.slice(0, 10)),
+            })}
+          />
+          <AmountText
+            value={latestBill.statementBalance}
+            currency={latestBill.currency}
+            variant="title"
+          />
+          <Text tone="secondary">
+            {t('product.dueOn', { date: date(latestBill.dueDate, true) })}
+          </Text>
+        </Card>
+      ) : null}
 
       {!product.isActive ? (
         <Card variant="outline" padding="lg" style={styles.banner}>
@@ -432,16 +466,28 @@ export default function ProductDetailScreen() {
       <Appear index={block++}>
         <Card style={styles.section}>
           <SectionHeader title={t('product.details')} />
-          {details.map(([label, value]) => (
-            <View key={label} style={styles.detailRow}>
-              <Text variant="callout" tone="muted" style={styles.detailLabel}>
-                {label}
-              </Text>
-              <Text variant="callout" weight="600" style={styles.detailValue}>
-                {value}
-              </Text>
-            </View>
-          ))}
+          {details.map(([label, value]) => {
+            const billing = label === t('product.statementDay') || label === t('product.dueDay');
+            return (
+              <Pressable
+                key={label}
+                style={styles.detailRow}
+                disabled={!billing}
+                onPress={() => edit('billing')}
+                accessibilityRole={billing ? 'button' : undefined}
+                accessibilityHint={billing ? t('product.editBilling') : undefined}>
+                <Text variant="callout" tone="muted" style={styles.detailLabel}>
+                  {label}
+                </Text>
+                <Text variant="callout" weight="600" style={styles.detailValue}>
+                  {value}
+                </Text>
+                {billing ? (
+                  <Icon name="pencil-outline" size={16} color={colors.primaryText} />
+                ) : null}
+              </Pressable>
+            );
+          })}
           {floatToday ? (
             <Note
               icon="sparkles-outline"

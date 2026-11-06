@@ -338,3 +338,31 @@ describe('toProductFields for loans', () => {
     expect(preview?.[0].dueDate).toBe('2026-08-21');
   });
 });
+
+it('ignores legacy repayment methods and generates equal payments without writing the column', () => {
+  const values = loanForm();
+  const { fields } = toProductFields(values, today);
+  const legacy = { ...fields, repaymentMethod: 'interest_first' };
+  const edited = formValuesFromProduct(legacy, true, today);
+  expect(edited).not.toHaveProperty('repaymentMethod');
+  const result = toProductFields(edited, today);
+  expect(result.fields).not.toHaveProperty('repaymentMethod');
+  const schedule = previewSchedule(edited)!;
+  expect(schedule[0].principal).toBeGreaterThan(0);
+  expect(schedule[0].amount).toBeCloseTo(schedule[1].amount, 2);
+});
+
+it('normalizes bill delivery fields and rejects complete card numbers', () => {
+  const valid = cardForm({ billEmail: '  Synthetic@Example.COM ', cardLast4: '1234' });
+  expect(validateProductForm(valid)).toEqual({});
+  expect(toProductFields(valid, today).fields).toMatchObject({
+    billEmail: 'synthetic@example.com',
+    cardLast4: '1234',
+  });
+  expect(validateProductForm(cardForm({ billEmail: 'invalid', cardLast4: '12345' }))).toMatchObject(
+    { billEmail: 'email', cardLast4: 'last4' }
+  );
+  expect(validateProductForm(cardForm({ cardLast4: '12a4' }))).toMatchObject({
+    cardLast4: 'last4',
+  });
+});

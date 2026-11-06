@@ -1,8 +1,7 @@
 import type { TFunction } from 'i18next';
 
 import { roundTo } from '@/domain/money';
-import { TARGET_ALLOCATIONS, type Action, type Bucket } from '@/domain/portfolioPlanner';
-import type { RiskProfileKey } from '@/domain/riskProfile';
+import type { Action } from '@/domain/portfolioPlanner';
 
 export type ActionText = { title: string; lines: string[]; done: boolean };
 
@@ -11,9 +10,6 @@ type Context = {
   money: (amount: number) => string;
   percent: (fraction: number) => string;
 };
-
-const bucketKey = (bucket: Bucket) => `plan.buckets.${bucket}` as const;
-const profileKey = (profile: RiskProfileKey) => `risk.profiles.${profile}` as const;
 
 /** The plain-language title and reasoning for one step of the plan. */
 export function describeAction(action: Action, { t, money, percent }: Context): ActionText {
@@ -119,41 +115,6 @@ export function describeAction(action: Action, { t, money, percent }: Context): 
         lines: [t('plan.actions.fixCashFlow.reason', { amount: money(action.shortfall) })],
         done: false,
       };
-    case 'invest': {
-      const lines = [
-        t('plan.actions.invest.reason', {
-          profile: t(profileKey(action.profile)),
-          equity: percent(equityShare(action.profile)),
-        }),
-      ];
-      if (action.afterEarlierSteps) lines.push(t('plan.actions.invest.after'));
-      if (action.assumedProfile) lines.push(t('plan.actions.invest.assumed'));
-      return {
-        title: t('plan.actions.invest.title', { amount: money(action.monthly) }),
-        lines,
-        done: false,
-      };
-    }
-    case 'rebalance': {
-      if (action.done || !action.largest) {
-        return {
-          title: t('plan.actions.rebalance.titleDone'),
-          lines: [t('plan.actions.rebalance.reasonDone')],
-          done: true,
-        };
-      }
-      const { bucket, gap } = action.largest;
-      const params = { bucket: t(bucketKey(bucket)), amount: money(Math.abs(gap)) };
-      return {
-        title: t('plan.actions.rebalance.title'),
-        lines: [
-          gap < 0
-            ? t('plan.actions.rebalance.over', params)
-            : t('plan.actions.rebalance.under', params),
-        ],
-        done: false,
-      };
-    }
     case 'payCardsInFull':
       return {
         title: t('plan.actions.payCardsInFull.title'),
@@ -166,10 +127,4 @@ export function describeAction(action: Action, { t, money, percent }: Context): 
         done: false,
       };
   }
-}
-
-/** The stock share of a profile's target, for "targets 70% in stocks". */
-function equityShare(profile: RiskProfileKey): number {
-  const target = TARGET_ALLOCATIONS[profile];
-  return target.domestic_equity + target.international_equity;
 }

@@ -82,6 +82,9 @@ function setup(options: { server?: Data | null; serverRevision?: number; device?
     get account() {
       return account;
     },
+    set account(next: SyncAccount | null) {
+      account = next;
+    },
   };
 }
 
@@ -209,3 +212,126 @@ describe('SyncEngine', () => {
     expect(t.engine.getStatus().phase).toBe('off');
   });
 });
+
+function deferred<T>() {
+  let resolve!: (value: T) => void;
+  const promise = new Promise<T>((done) => {
+    resolve = done;
+  });
+  return { promise, resolve };
+}
+
+it('keeps a card edit made while checking the server revision', async () => {
+  const t = setup({ device: data(1) });
+  await t.engine.sync();
+  const revision = deferred<number>();
+  (t.client.revision as jest.Mock).mockReturnValueOnce(revision.promise);
+  const pass = t.engine.sync();
+  await Promise.resolve();
+  t.device = {
+    ...data(1),
+    tables: {
+      ...data(1).tables,
+      credit_products: [
+        {
+          id: 'card',
+          name: 'Edited synthetic card',
+          balance: 123,
+          statementDay: 6,
+          dueDay: 24,
+          hasGracePeriod: true,
+          interestRateUnit: 'daily',
+        },
+      ],
+    },
+  };
+  revision.resolve(t.server.revision);
+  await pass;
+  expect(t.server.data).toEqual(t.device);
+});
+
+it('never overwrites an edit made while downloading a newer server snapshot', async () => {
+  const t = setup({ device: data(1) });
+  await t.engine.sync();
+  t.server.data = data(3);
+  t.server.revision++;
+  const download = deferred<Data & { revision: number }>();
+  (t.client.download as jest.Mock).mockReturnValueOnce(download.promise);
+  const pass = t.engine.sync();
+  while (!(t.client.download as jest.Mock).mock.calls.length) await Promise.resolve();
+  t.device = data(2);
+  download.resolve({ ...data(3), revision: t.server.revision });
+  await pass;
+  expect(t.device).toEqual(data(2));
+  expect(t.engine.getStatus().phase).toBe('conflict');
+});
+
+it('preserves all edited product fields through upload, reload, and foreground checks', async () => {
+  const t = setup({ device: data(1) });
+  await t.engine.sync();
+  const product = {
+    id: 'card',
+    name: 'Synthetic card',
+    balance: 100,
+    statementDay: 2,
+    dueDay: 22,
+    dueRule: 'fixed_day',
+    dueDaysAfterStatement: null,
+    hasGracePeriod: true,
+    graceNote: 'Synthetic grace rule',
+    interestRate: 12,
+    interestRateUnit: 'apr',
+  };
+  t.device = { ...data(1), tables: { ...data(1).tables, credit_products: [product] } };
+  await t.engine.sync({ checkServer: false });
+  await t.engine.load();
+  await t.engine.sync();
+  await t.engine.sync();
+  expect(t.server.data?.tables.credit_products[0]).toEqual(product);
+  expect(t.device.tables.credit_products[0]).toEqual(product);
+  expect(t.engine.getStatus().phase).toBe('synced');
+});
+
+it.each(['revision', 'download'] as const)(
+  'resets status after signing out during %s',
+  async (stage) => {
+    const t = setup({ server: data(3) });
+    const request = deferred<unknown>();
+    (t.client[stage] as jest.Mock).mockReturnValueOnce(request.promise);
+    const pass = t.engine.sync();
+    while (!(t.client[stage] as jest.Mock).mock.calls.length) await Promise.resolve();
+    expect(t.engine.getStatus().phase).toBe('syncing');
+    t.account = null;
+    request.resolve(stage === 'revision' ? 1 : { ...data(3), revision: 1 });
+    await pass;
+    expect(t.engine.getStatus()).toEqual({ phase: 'off', lastSyncedAt: null });
+    expect(t.device).toEqual(data(0));
+    expect(t.server.uploads).toBe(0);
+  }
+);
+
+it.each(['revision', 'download'] as const)(
+  'loads the replacement account status after switching accounts during %s',
+  async (stage) => {
+    const t = setup({ server: data(3) });
+    const request = deferred<unknown>();
+    (t.client[stage] as jest.Mock).mockReturnValueOnce(request.promise);
+    const pass = t.engine.sync();
+    while (!(t.client[stage] as jest.Mock).mock.calls.length) await Promise.resolve();
+    const replacement = {
+      ...t.account!,
+      token: 'other-account',
+      lastSyncedAt: '2026-11-01T00:00:00Z',
+    };
+    t.account = replacement;
+    request.resolve(stage === 'revision' ? 1 : { ...data(3), revision: 1 });
+    await pass;
+    expect(t.engine.getStatus()).toEqual({
+      phase: 'synced',
+      lastSyncedAt: replacement.lastSyncedAt,
+    });
+    expect(t.account).toEqual(replacement);
+    expect(t.device).toEqual(data(0));
+    expect(t.server.uploads).toBe(0);
+  }
+);

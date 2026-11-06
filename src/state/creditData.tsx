@@ -5,6 +5,8 @@ import { getDb } from '@/db/client';
 import { fxTableFromRows } from '@/db/fx';
 import { useLiveRows } from '@/db/live';
 import {
+  billStatements,
+  type BillStatementRow,
   creditProducts,
   customProductTypes,
   fxRates,
@@ -31,6 +33,7 @@ import { usePreferences } from './preferences';
 export type CreditData = {
   today: LocalDate;
   products: CreditProductRow[];
+  billStatements: BillStatementRow[];
   installments: InstallmentRow[];
   /** Newest first. */
   payments: PaymentRow[];
@@ -60,6 +63,18 @@ const CreditDataContext = createContext<CreditData | null>(null);
 export function CreditDataProvider({ children }: { children: ReactNode }) {
   const { prefs } = usePreferences();
   const today = useToday();
+  const bills = useLiveRows(['bill_statements'], () =>
+    getDb()
+      .select()
+      .from(billStatements)
+      .orderBy(
+        desc(billStatements.dueDate),
+        desc(billStatements.statementDate),
+        desc(billStatements.receivedAt),
+        desc(billStatements.sourceMessageId)
+      )
+      .all()
+  );
   const products = useLiveRows(['credit_products'], readProducts);
   const installmentRows = useLiveRows(['installments'], readInstallments);
   const paymentRows = useLiveRows(['payments'], readPayments);
@@ -76,6 +91,7 @@ export function CreditDataProvider({ children }: { children: ReactNode }) {
       value={{
         today,
         products,
+        billStatements: bills,
         installments: installmentRows,
         payments: paymentRows,
         customTypes,
@@ -101,6 +117,7 @@ export function useProduct(id: string | undefined) {
   if (!status) return null;
   return {
     ...status,
+    latestBill: data.billStatements.find((bill) => bill.productId === id) ?? null,
     installments: data.installments.filter((item) => item.productId === id),
     payments: data.payments.filter((item) => item.productId === id),
     customType: data.customTypes.find((type) => type.id === status.product.customTypeId) ?? null,

@@ -24,7 +24,7 @@ export const TAB_BAR_HEIGHT = 64;
 const INSET = 6;
 
 const ICONS: Record<string, { idle: IconName; active: IconName }> = {
-  index: { idle: 'home-outline', active: 'home' },
+  index: { idle: 'calendar-outline', active: 'calendar' },
   credit: { idle: 'card-outline', active: 'card' },
   wealth: { idle: 'pie-chart-outline', active: 'pie-chart' },
   settings: { idle: 'person-circle-outline', active: 'person-circle' },

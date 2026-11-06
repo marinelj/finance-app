@@ -15,6 +15,8 @@ function list(value) {
 
 export function loadConfig(env = process.env) {
   const sslmode = env.DB_SSLMODE ?? 'prefer';
+  if (env.INGEST_TOKEN && Buffer.byteLength(env.INGEST_TOKEN) < 32)
+    throw new Error('INGEST_TOKEN must be at least 32 bytes');
   return {
     db: {
       host: required('DB_HOST'),
@@ -29,6 +31,7 @@ export function loadConfig(env = process.env) {
           : false,
       max: 10,
     },
+    ingestToken: env.INGEST_TOKEN || undefined,
     host: env.API_HOST ?? '0.0.0.0',
     port: Number(env.API_PORT ?? 8787),
     /** Optional independent Codex gateway, mounted at /codex on this API port. */

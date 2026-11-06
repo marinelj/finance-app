@@ -21,9 +21,7 @@ import {
   type StockRow,
 } from '@/db/schema';
 import { readPlannerSettings, readSnapshots } from '@/db/planner';
-import { readRiskProfile, type StoredRiskProfile } from '@/db/wealth';
 import type { PlannerSettings } from '@/domain/portfolioPlanner';
-import { isCompleteAnswers } from '@/domain/riskProfile';
 import type { WealthKind } from '@/domain/wealthForms';
 
 export type WealthData = {
@@ -34,7 +32,6 @@ export type WealthData = {
   cash: CashRow[];
   bonds: BondRow[];
   stocks: StockRow[];
-  risk: StoredRiskProfile | null;
   plannerSettings: PlannerSettings;
   /** Oldest first. */
   snapshots: NetWorthSnapshotRow[];
@@ -54,10 +51,6 @@ const readBonds = () =>
   getDb().select().from(bondHoldings).orderBy(asc(bondHoldings.maturityDate)).all();
 const readStocks = () =>
   getDb().select().from(stockHoldings).orderBy(asc(stockHoldings.createdAt)).all();
-const readRisk = () => {
-  const stored = readRiskProfile();
-  return stored && isCompleteAnswers(stored.answers) ? stored : null;
-};
 
 const WealthDataContext = createContext<WealthData | null>(null);
 
@@ -71,7 +64,6 @@ export function WealthDataProvider({ children }: { children: ReactNode }) {
     cash: useLiveRows(['cash_accounts'], readCash),
     bonds: useLiveRows(['bond_holdings'], readBonds),
     stocks: useLiveRows(['stock_holdings'], readStocks),
-    risk: useLiveRows(['settings'], readRisk),
     plannerSettings: useLiveRows(['settings'], readPlannerSettings),
     snapshots: useLiveRows(['net_worth_snapshots'], readSnapshots),
   };

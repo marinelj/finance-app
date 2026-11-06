@@ -10,6 +10,7 @@ import { z } from 'zod';
 export const SYNC_TABLES = [
   'custom_product_types',
   'credit_products',
+  'bill_statements',
   'installments',
   'payments',
   'fx_rates',
@@ -25,6 +26,7 @@ export const SYNC_TABLES = [
 
 /** Tables owned through their credit product rather than a user_id column. */
 const CHILD_TABLES = new Set(['installments', 'payments']);
+const PRODUCT_TABLES = new Set([...CHILD_TABLES, 'bill_statements']);
 
 export const SETTING_KEYS = ['preferences', 'riskProfile', 'planner', 'demo'];
 
@@ -155,6 +157,41 @@ export async function currentRevision(client, userId) {
  * number of rows stored and the new revision.
  */
 export async function replaceSnapshot(client, columns, userId, payload) {
+  // Old clients omit newly introduced fields/tables. Preserve those values before parent
+  // replacement cascades, and retain server-owned email history for products still present.
+  const { rows: existingProducts } = await client.query(
+    'SELECT id, bill_email, card_last4 FROM credit_products WHERE user_id = $1',
+    [userId]
+  );
+  const productById = new Map(existingProducts.map((row) => [row.id, row]));
+  const incomingProducts = (payload.tables.credit_products ?? []).map((row) => {
+    const stored = productById.get(row.id);
+    return {
+      ...row,
+      billEmail: row.billEmail === undefined ? (stored?.bill_email ?? null) : row.billEmail,
+      cardLast4: row.cardLast4 === undefined ? (stored?.card_last4 ?? null) : row.cardLast4,
+    };
+  });
+  const incomingIds = new Set(incomingProducts.map((row) => row.id));
+  const { rows: storedBills } = await client.query(
+    'SELECT * FROM bill_statements WHERE user_id = $1',
+    [userId]
+  );
+  const bills = new Map(
+    (payload.tables.bill_statements ?? []).map((row) => [row.sourceMessageId, row])
+  );
+  for (const row of storedBills)
+    bills.set(
+      row.source_message_id,
+      Object.fromEntries(
+        Object.entries(row)
+          .filter(([key]) => key !== 'user_id')
+          .map(([key, value]) => [toCamel(key), value])
+      )
+    );
+  if ((payload.tables.bill_statements ?? []).some((row) => !incomingIds.has(row.productId)))
+    throw new SyncError('invalid', 'bill_statements refers to a product outside the upload');
+  const preservedBills = [...bills.values()].filter((row) => incomingIds.has(row.productId));
   // Children go with their products (ON DELETE CASCADE).
   for (const table of [...SYNC_TABLES].reverse()) {
     if (CHILD_TABLES.has(table)) continue;
@@ -164,10 +201,15 @@ export async function replaceSnapshot(client, columns, userId, payload) {
   const productIds = new Set();
   let count = 0;
   for (const table of SYNC_TABLES) {
-    const incoming = payload.tables[table] ?? [];
+    const incoming =
+      table === 'credit_products'
+        ? incomingProducts
+        : table === 'bill_statements'
+          ? preservedBills
+          : (payload.tables[table] ?? []);
     const rows = rowsForInsert(table, incoming, columns.get(table), userId);
     if (table === 'credit_products') for (const row of rows) productIds.add(row.id);
-    if (CHILD_TABLES.has(table) && rows.some((row) => !productIds.has(row.product_id))) {
+    if (PRODUCT_TABLES.has(table) && rows.some((row) => !productIds.has(row.product_id))) {
       // Only attach plans and payments to products in this same upload.
       throw new SyncError('invalid', `${table} refers to a product that isn't in the upload`);
     }
