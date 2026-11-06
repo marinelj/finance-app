@@ -58,7 +58,7 @@ async function start(pool, overrides = {}, log = { error() {}, info() {} }) {
 }
 
 // These handler tests need no database and run even without integration-test credentials.
-it('returns 404 when disabled, 401 for wrong auth, and 429 after 60 attempts', async () => {
+it('returns 404 when disabled, 401 for wrong auth, and 429 after 60 failed attempts', async () => {
   const disabled = await start(null, { ingestToken: undefined });
   const enabled = await start(null);
   try {
@@ -78,6 +78,19 @@ it('returns 404 when disabled, 401 for wrong auth, and 429 after 60 attempts', a
   } finally {
     disabled.server.close();
     enabled.server.close();
+  }
+});
+
+it('successful ingest requests never consume the authentication failure limit', async () => {
+  const pool = {
+    query: async (sql) => ({ rows: sql.includes('FROM users') ? [{ id: owner }] : [] }),
+  };
+  const api = await start(pool);
+  try {
+    for (let i = 0; i < 120; i++)
+      assert.equal((await api.call('GET', '/api/ingest/cards')).status, 200);
+  } finally {
+    api.server.close();
   }
 });
 

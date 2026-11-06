@@ -148,7 +148,8 @@ The database listens on a public IP. Before real data goes in:
 Set `INGEST_TOKEN` in `server/.env` to a secret generated from at least 32 random bytes. Without
 it, the ingest endpoints return 404. It authorizes only `GET /api/ingest/cards` and
 `POST /api/ingest/statements`; it cannot sign in, read `/api/me`, or use `/api/sync`.
-The two endpoints share a limit of 60 requests per hour, including rejected requests.
+The two endpoints share a lockout after 60 failed authentication attempts per hour. Successful
+authentication does not consume the limit. While blocked, all requests return 429 until reset.
 
 The cards response is an explicit metadata allowlist without balances. Statement batches accept
 at most 1,000 parsed entries; never send raw email bodies or full card numbers. Invalid entries

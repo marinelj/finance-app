@@ -68,9 +68,10 @@ export function createIngestRoutes({ pool, token, readJson, log = console }) {
   function authorize(req) {
     if (!token) throw new IngestError(404, 'not_found');
     if (throttle.blocked('ingest')) throw new IngestError(429, 'too_many_requests');
-    throttle.fail('ingest');
-    if (!isIngestAuthorization(req.headers.authorization, token))
+    if (!isIngestAuthorization(req.headers.authorization, token)) {
+      throttle.fail('ingest');
       throw new IngestError(401, 'unauthorized');
+    }
   }
   async function owner(client) {
     const { rows } = await client.query('SELECT id FROM users ORDER BY created_at, id LIMIT 1');
