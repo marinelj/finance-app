@@ -28,7 +28,7 @@ import { aprPercent, dailyRatePercent, type Installment, type RateUnit } from '@
 import { nextDue } from '@/domain/creditStatus';
 import type { LocalDate } from '@/domain/dates';
 import { totalInterest } from '@/domain/loans';
-import { CURRENCIES, CURRENCY_CODES, formatMoney, roundTo } from '@/domain/money';
+import { CURRENCIES, type CurrencyCode, formatMoney, roundTo } from '@/domain/money';
 import { parseDecimal } from '@/domain/numberInput';
 import {
   isLoanKind,
@@ -46,7 +46,7 @@ import { haptics } from '@/lib/haptics';
 import { usePreferences } from '@/state/preferences';
 import { CONTENT_MAX_WIDTH, useCenteredGutter } from '@/lib/platform';
 
-import { ColorPicker, EmojiPicker } from './AppearancePickers';
+import { ColorPicker } from './AppearancePickers';
 import { dayValueLabel } from './labels';
 import { ProductCard } from './ProductCard';
 
@@ -68,6 +68,11 @@ type ProductFormProps = {
   /** Extra content below the fields, e.g. payments on a product's own page. */
   children?: ReactNode;
 };
+
+/** The form offers only these; a product already in another currency keeps its own. */
+const FORM_CURRENCIES: CurrencyCode[] = ['CNY', 'USD', 'JPY'];
+const formCurrencies = (current: CurrencyCode) =>
+  FORM_CURRENCIES.includes(current) ? FORM_CURRENCIES : [...FORM_CURRENCIES, current];
 
 type DayField = 'statementDay' | 'dueDay' | 'repaymentDay';
 
@@ -246,14 +251,12 @@ export function ProductForm({
               accessibilityLabel={t('form.currency')}
               value={values.currency}
               onChange={(code) => set('currency', code)}
-              options={CURRENCY_CODES.map((code) => ({ value: code, label: code }))}
+              options={formCurrencies(values.currency).map((code) => ({
+                value: code,
+                label: code,
+              }))}
             />
-            <EmojiPicker
-              label={t('form.icon')}
-              value={values.emoji}
-              onChange={(emoji) => set('emoji', emoji)}
-              color={values.color}
-            />
+
             <ColorPicker
               label={t('form.color')}
               value={values.color}
@@ -346,7 +349,6 @@ export function ProductForm({
                   hint: t('form.statementBalanceHint'),
                   optional: true,
                 })}
-                {amountField('minimumPayment', t('form.minimumPayment'), { optional: true })}
               </FormSection>
             </Appear>
 
@@ -361,18 +363,26 @@ export function ProductForm({
                     onPress={() => setDayField('statementDay')}
                     error={error('statementDay')}
                   />
-                  <Text variant="caption" tone="muted">
-                    {t('form.dueRule')}
-                  </Text>
-                  <SegmentedControl
-                    accessibilityLabel={t('form.dueRule')}
-                    value={values.dueRule}
-                    onChange={(rule) => set('dueRule', rule)}
-                    options={[
-                      { value: 'fixed_day', label: t('dueRules.fixed_day') },
-                      { value: 'days_after_statement', label: t('dueRules.days_after_statement') },
-                    ]}
-                  />
+                  {/* Due day is a fixed day of the month; the rule switch stays only for old data. */}
+                  {values.dueRule === 'days_after_statement' ? (
+                    <>
+                      <Text variant="caption" tone="muted">
+                        {t('form.dueRule')}
+                      </Text>
+                      <SegmentedControl
+                        accessibilityLabel={t('form.dueRule')}
+                        value={values.dueRule}
+                        onChange={(rule) => set('dueRule', rule)}
+                        options={[
+                          { value: 'fixed_day', label: t('dueRules.fixed_day') },
+                          {
+                            value: 'days_after_statement',
+                            label: t('dueRules.days_after_statement'),
+                          },
+                        ]}
+                      />
+                    </>
+                  ) : null}
                   {values.dueRule === 'fixed_day' ? (
                     <SelectField
                       label={t('form.dueDay')}
@@ -394,17 +404,6 @@ export function ProductForm({
                 </FormSection>
               </Appear>
             </View>
-
-            <Appear index={section++}>
-              <FormSection title={t('form.interest')}>
-                <SwitchRow
-                  label={t('form.hasGracePeriod')}
-                  hint={t('form.hasGracePeriodHint')}
-                  value={values.hasGracePeriod}
-                  onChange={(on) => set('hasGracePeriod', on)}
-                />
-              </FormSection>
-            </Appear>
           </>
         )}
 
