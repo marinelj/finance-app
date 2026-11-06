@@ -19,7 +19,7 @@ const en = {
     today: 'Today',
   },
   tabs: {
-    home: 'Home',
+    home: 'Calendar',
     credit: 'Credit',
     wealth: 'Wealth',
     settings: 'Me',
@@ -34,6 +34,30 @@ const en = {
     errorMessage:
       'Something went wrong while opening the database on this phone ({{message}}). Nothing was changed.',
     retry: 'Try again',
+  },
+
+  calendar: {
+    today: 'Today',
+    previousMonth: 'Previous month',
+    nextMonth: 'Next month',
+    dayLabel_one: '{{date}}, {{count}} event',
+    dayLabel_other: '{{date}}, {{count}} events',
+    daysLeft_one: '{{count}} day left',
+    daysLeft_other: '{{count}} days left',
+    nextAgenda: 'Today is clear. Here is the next day with events.',
+    noEvents: 'No events on this day.',
+    unpaid: 'Unpaid',
+    scheduled: 'Scheduled',
+    bestLine_one: 'Best today: {{name}} · {{count}} interest-free day',
+    bestLine_other: 'Best today: {{name}} · {{count}} interest-free days',
+    kinds: {
+      bill: 'Bill due',
+      statement: 'Statement closes',
+      installment: 'Installment due',
+      income: 'Income',
+      housing: 'Housing payment',
+      insurance: 'Insurance premium / renewal',
+    },
   },
   home: {
     totalOwed: 'Total owed',
