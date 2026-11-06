@@ -3,7 +3,6 @@ import { createContext, useContext, useEffect, type ReactNode } from 'react';
 import { upsertSnapshot } from '@/db/planner';
 import { monthKey } from '@/domain/dates';
 import { buildPlan, debtsFromCredit, type Plan } from '@/domain/portfolioPlanner';
-import { scoreRisk } from '@/domain/riskProfile';
 
 import { useCreditData } from './creditData';
 import { usePreferences } from './preferences';
@@ -31,7 +30,6 @@ export function PlanProvider({ children }: { children: ReactNode }) {
       stocks: wealth.stocks,
     },
     debts: debtsFromCredit(credit.products, credit.installments, credit.today, home, credit.fx),
-    risk: wealth.risk ? scoreRisk(wealth.risk.answers) : null,
     settings: wealth.plannerSettings,
   });
 

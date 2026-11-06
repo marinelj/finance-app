@@ -1,21 +1,16 @@
 import type { CreditProduct, Installment } from '../credit';
 import type { PortfolioInputs } from '../portfolio';
 import {
-  allocationGaps,
   buildPlan,
   debtsFromCredit,
-  expectedReturn,
   healthRatios,
   insuranceGaps,
   passiveIncomeCalendar,
   projectNetWorth,
-  splitContribution,
-  TARGET_ALLOCATIONS,
   type Action,
   type DebtInput,
   type Plan,
 } from '../portfolioPlanner';
-import { scoreRisk } from '../riskProfile';
 
 const today = '2026-10-21';
 const fx = { USD: 1, CNY: 7 };
@@ -99,16 +94,8 @@ const debts: DebtInput[] = [
   },
 ];
 
-const risk = scoreRisk({
-  age: 34,
-  horizon: 'over15',
-  goal: 'balanced',
-  dropReaction: 'hold',
-  incomeStability: 'stable',
-});
-
 function plan(overrides: Partial<Parameters<typeof buildPlan>[0]> = {}): Plan {
-  return buildPlan({ today, home: 'CNY', fx, inputs, debts, risk, ...overrides });
+  return buildPlan({ today, home: 'CNY', fx, inputs, debts, ...overrides });
 }
 
 function action<K extends Action['key']>(result: Plan, key: K): Extract<Action, { key: K }> {
@@ -278,8 +265,6 @@ describe('the action plan', () => {
       'payHighInterest',
       'emergencyFund',
       'insurance',
-      'invest',
-      'rebalance',
       'payCardsInFull',
     ]);
   });
@@ -320,27 +305,6 @@ describe('the action plan', () => {
     ]);
   });
 
-  it('invests the surplus after the earlier steps, by the risk profile', () => {
-    const invest = action(result, 'invest');
-    expect(invest).toMatchObject({
-      monthly: 14840,
-      profile: 'growth',
-      afterEarlierSteps: true,
-      assumedProfile: false,
-    });
-    expect(Object.values(invest.split).reduce((sum, value) => sum + value, 0)).toBeCloseTo(
-      14840,
-      6
-    );
-  });
-
-  it('assumes Balanced until the quiz is taken', () => {
-    expect(action(plan({ risk: null }), 'invest')).toMatchObject({
-      profile: 'balanced',
-      assumedProfile: true,
-    });
-  });
-
   it('asks to fix a negative cash flow before investing', () => {
     const tight = plan({
       inputs: { ...inputs, incomes: [{ amount: 12000, period: 'monthly', currency: 'CNY' }] },
@@ -349,65 +313,8 @@ describe('the action plan', () => {
     expect(tight.actions.map((item) => item.key)).not.toContain('invest');
   });
 
-  it('suggests rebalancing when a bucket drifts more than 5% of the total', () => {
-    const rebalance = action(result, 'rebalance');
-    expect(rebalance.total).toBe(67000);
-    expect(rebalance.largest).toEqual({ bucket: 'domestic_equity', gap: -23200 });
-    expect(rebalance.done).toBe(false);
-  });
-
   it('reminds to pay cards in full, naming the highest rate', () => {
     expect(action(result, 'payCardsInFull')).toMatchObject({ highestApr: 18.25, name: 'CMB' });
-  });
-});
-
-describe('allocation maths', () => {
-  const target = TARGET_ALLOCATIONS.growth;
-  const current = {
-    cash: 10000,
-    bonds: 0,
-    domestic_equity: 50000,
-    international_equity: 7000,
-    other: 0,
-  };
-
-  it('has targets that add up to 100% for every profile', () => {
-    for (const shares of Object.values(TARGET_ALLOCATIONS)) {
-      expect(Object.values(shares).reduce((sum, value) => sum + value, 0)).toBeCloseTo(1, 10);
-    }
-  });
-
-  it('measures the gap to target per bucket', () => {
-    expect(allocationGaps(current, target)).toEqual({
-      cash: 3350 - 10000,
-      bonds: 13400,
-      domestic_equity: 26800 - 50000,
-      international_equity: 20100 - 7000,
-      other: 3350,
-    });
-  });
-
-  it('sends new money to underweight buckets only', () => {
-    const split = splitContribution(current, target, 14840);
-    expect(split.cash).toBe(0);
-    expect(split.domestic_equity).toBe(0);
-    expect(split.bonds).toBeCloseTo((14840 * 16368) / 38012, 6);
-    expect(split.international_equity).toBeCloseTo((14840 * 17552) / 38012, 6);
-    expect(split.other).toBeCloseTo((14840 * 4092) / 38012, 6);
-  });
-
-  it('lands every bucket on target when none is overweight', () => {
-    const split = splitContribution(
-      { cash: 5, bonds: 20, domestic_equity: 40, international_equity: 30, other: 0 },
-      target,
-      5
-    );
-    expect(split.other).toBeCloseTo(5, 10);
-    expect(split.bonds).toBeCloseTo(0, 10);
-  });
-
-  it('weights the return assumptions by the target', () => {
-    expect(expectedReturn(target)).toBeCloseTo(5.525, 10);
   });
 });
 

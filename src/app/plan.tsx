@@ -11,7 +11,6 @@ import { Text } from '@/components/Text';
 import { useStyles, useTheme } from '@/design/theme';
 import type { Theme } from '@/design/tokens';
 import { savePlannerSettings } from '@/db/planner';
-import { AllocationCard } from '@/features/plan/AllocationCard';
 import { NextSteps } from '@/features/plan/NextSteps';
 import { WhatIfCard } from '@/features/plan/WhatIfCard';
 import { usePlan } from '@/state/plan';
@@ -33,13 +32,6 @@ export default function PlanScreen() {
         <Card style={styles.section}>
           <SectionHeader title={t('plan.nextSteps')} />
           <NextSteps actions={plan.actions} />
-        </Card>
-      </Appear>
-
-      <Appear index={1}>
-        <Card style={styles.section}>
-          <SectionHeader title={t('plan.allocation')} />
-          <AllocationCard allocation={plan.allocation} showSplit />
         </Card>
       </Appear>
 

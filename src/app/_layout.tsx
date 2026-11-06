@@ -63,7 +63,6 @@ function Navigation() {
         <Stack.Screen name="plan" options={{ title: t('plan.title') }} />
         <Stack.Screen name="wealth/[kind]/index" options={{ title: '' }} />
         <Stack.Screen name="wealth/[kind]/edit" options={{ presentation: 'modal' }} />
-        <Stack.Screen name="wealth/risk" options={{ presentation: 'modal' }} />
         <Stack.Screen name="settings/fx" options={{ title: t('fx.title') }} />
         <Stack.Screen name="settings/types" options={{ title: t('settings.productTypes') }} />
         <Stack.Screen name="settings/backup" options={{ title: t('backup.title') }} />

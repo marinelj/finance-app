@@ -17,7 +17,6 @@ import {
   type InputsOverview,
   type PortfolioInputs,
 } from './portfolio';
-import type { RiskProfileKey, RiskResult } from './riskProfile';
 import { dividendMonths, stockMarketValue, type AssetClass } from './stocks';
 
 /**
@@ -44,42 +43,6 @@ export type PlannerSettings = {
 };
 
 export const DEFAULT_PLANNER_SETTINGS: PlannerSettings = { highInterestApr: 6, emergencyMonths: 6 };
-
-/**
- * Target allocation of invested money per risk profile, as shares that add up to 1. Cash here is
- * money invested in cash-like products on top of the emergency fund.
- */
-export const TARGET_ALLOCATIONS: Record<RiskProfileKey, BucketAmounts> = {
-  conservative: {
-    cash: 0.2,
-    bonds: 0.6,
-    domestic_equity: 0.1,
-    international_equity: 0.05,
-    other: 0.05,
-  },
-  cautious: {
-    cash: 0.1,
-    bonds: 0.5,
-    domestic_equity: 0.2,
-    international_equity: 0.15,
-    other: 0.05,
-  },
-  balanced: {
-    cash: 0.05,
-    bonds: 0.35,
-    domestic_equity: 0.3,
-    international_equity: 0.25,
-    other: 0.05,
-  },
-  growth: { cash: 0.05, bonds: 0.2, domestic_equity: 0.4, international_equity: 0.3, other: 0.05 },
-  aggressive: {
-    cash: 0,
-    bonds: 0.1,
-    domestic_equity: 0.5,
-    international_equity: 0.35,
-    other: 0.05,
-  },
-};
 
 /** Long-run nominal return assumptions per year, in percent. Assumptions, not forecasts. */
 export const RETURN_ASSUMPTIONS: BucketAmounts = {
@@ -409,42 +372,6 @@ export function currentAllocation(
 
 const sumOf = (amounts: BucketAmounts) => BUCKETS.reduce((sum, bucket) => sum + amounts[bucket], 0);
 
-/** How far each bucket is from its target share: positive means buy more, negative over target. */
-export function allocationGaps(current: BucketAmounts, target: BucketAmounts): BucketAmounts {
-  const total = sumOf(current);
-  return Object.fromEntries(
-    BUCKETS.map((bucket) => [bucket, target[bucket] * total - current[bucket]])
-  ) as BucketAmounts;
-}
-
-/**
- * Splits a monthly contribution so new money flows to underweight buckets first, in proportion
- * to how far each is below its target after the contribution; overweight buckets get nothing,
- * so nothing has to be sold. When no bucket is overweight this lands every bucket on target.
- */
-export function splitContribution(
-  current: BucketAmounts,
-  target: BucketAmounts,
-  amount: number
-): BucketAmounts {
-  const split: BucketAmounts = {
-    cash: 0,
-    bonds: 0,
-    domestic_equity: 0,
-    international_equity: 0,
-    other: 0,
-  };
-  if (!(amount > 0)) return split;
-  const after = sumOf(current) + amount;
-  const shortfalls = BUCKETS.map((bucket) => Math.max(0, target[bucket] * after - current[bucket]));
-  // The shortfalls add up to at least `amount`, because the targets add up to 1.
-  const totalShortfall = shortfalls.reduce((sum, value) => sum + value, 0);
-  BUCKETS.forEach((bucket, i) => {
-    split[bucket] = (amount * shortfalls[i]) / totalShortfall;
-  });
-  return split;
-}
-
 /** Weighted average of the return assumptions for an allocation, in percent per year. */
 export function expectedReturn(target: BucketAmounts): number {
   return BUCKETS.reduce((sum, bucket) => sum + target[bucket] * RETURN_ASSUMPTIONS[bucket], 0);
@@ -501,35 +428,7 @@ export type Action =
     }
   | { key: 'insurance'; done: boolean; gaps: InsuranceGap[]; annualIncome: number }
   | { key: 'fixCashFlow'; done: false; shortfall: number }
-  | {
-      key: 'invest';
-      done: false;
-      monthly: number;
-      profile: RiskProfileKey;
-      assumedProfile: boolean;
-      split: BucketAmounts;
-      /** True while earlier steps take the surplus; investing starts after them. */
-      afterEarlierSteps: boolean;
-    }
-  | {
-      key: 'rebalance';
-      done: boolean;
-      gaps: BucketAmounts;
-      total: number;
-      largest: { bucket: Bucket; gap: number } | null;
-    }
   | { key: 'payCardsInFull'; done: false; highestApr: number; name: string };
-
-export type Allocation = {
-  profile: RiskProfileKey;
-  /** No risk profile yet, so Balanced is used. */
-  assumedProfile: boolean;
-  target: BucketAmounts;
-  current: BucketAmounts;
-  total: number;
-  gaps: BucketAmounts;
-  split: BucketAmounts;
-};
 
 export type PlannerInput = {
   today: LocalDate;
@@ -537,7 +436,6 @@ export type PlannerInput = {
   fx: FxTable;
   inputs: PortfolioInputs;
   debts: DebtInput[];
-  risk: RiskResult | null;
   settings?: PlannerSettings;
 };
 
@@ -548,18 +446,14 @@ export type Plan = {
   passive: { months: PassiveMonth[]; annual: number; monthlyAverage: number };
   ratios: Ratio[];
   actions: Action[];
-  allocation: Allocation;
   /** Invested assets (cash beyond the emergency fund, bonds, stocks), home currency. */
   invested: number;
   expectedReturn: number;
   settings: PlannerSettings;
 };
 
-/** Rebalancing is suggested when a bucket is off target by more than this share of the total. */
-export const REBALANCE_TOLERANCE = 0.05;
-
 export function buildPlan(input: PlannerInput): Plan {
-  const { today, home, fx, inputs, debts, risk } = input;
+  const { today, home, fx, inputs, debts } = input;
   const settings = input.settings ?? DEFAULT_PLANNER_SETTINGS;
   const overview = summarizeInputs(inputs, today, home, fx);
   const netWorth = netWorthOf(overview, debts);
@@ -585,12 +479,8 @@ export function buildPlan(input: PlannerInput): Plan {
     emergencyTargetMonths: settings.emergencyMonths,
   });
 
-  const profile: RiskProfileKey = risk?.profile ?? 'balanced';
-  const target = TARGET_ALLOCATIONS[profile];
   const current = currentAllocation(inputs, overview, home, fx);
   const total = sumOf(current);
-  const gaps = allocationGaps(current, target);
-  const split = splitContribution(current, target, Math.max(0, surplus));
 
   const actions: Action[] = [];
 
@@ -645,33 +535,9 @@ export function buildPlan(input: PlannerInput): Plan {
     annualIncome: overview.income * 12,
   });
 
-  // 4. Invest the surplus by the risk profile (or fix a negative cash flow first).
+  // A negative cash flow needs attention before adding commitments.
   if (surplus <= 0 && cashFlow.income > 0) {
     actions.push({ key: 'fixCashFlow', done: false, shortfall: -surplus });
-  } else if (surplus > 0) {
-    actions.push({
-      key: 'invest',
-      done: false,
-      monthly: surplus,
-      profile,
-      assumedProfile: risk == null,
-      split,
-      afterEarlierSteps: highInterest.length > 0 || gap > 0,
-    });
-  }
-
-  // 5. Rebalance holdings that drifted from the target.
-  const largest = BUCKETS.map((bucket) => ({ bucket, gap: gaps[bucket] })).sort(
-    (a, b) => Math.abs(b.gap) - Math.abs(a.gap)
-  )[0];
-  if (total > 0) {
-    actions.push({
-      key: 'rebalance',
-      done: Math.abs(largest.gap) <= total * REBALANCE_TOLERANCE,
-      gaps,
-      total,
-      largest: largest ?? null,
-    });
   }
 
   // 6. Cards stay interest-free only when paid in full.
@@ -694,9 +560,15 @@ export function buildPlan(input: PlannerInput): Plan {
     passive: { months, annual: annualPassive, monthlyAverage: annualPassive / 12 },
     ratios,
     actions,
-    allocation: { profile, assumedProfile: risk == null, target, current, total, gaps, split },
     invested: total,
-    expectedReturn: expectedReturn(target),
+    expectedReturn:
+      total > 0
+        ? expectedReturn(
+            Object.fromEntries(
+              BUCKETS.map((bucket) => [bucket, current[bucket] / total])
+            ) as BucketAmounts
+          )
+        : 0,
     settings,
   };
 }

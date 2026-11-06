@@ -1,5 +1,4 @@
 import { HOLIDAY_KEYS } from '@/domain/holidays';
-import { DROP_REACTIONS, GOALS, HORIZONS, INCOME_STABILITY } from '@/domain/riskProfile';
 import { WEALTH_FIELDS, WEALTH_KINDS } from '@/domain/wealthForms';
 
 import { languageFromLocales, resolveLanguage } from '..';
@@ -72,16 +71,6 @@ describe('keys built from data', () => {
       }
     }
   }
-  const answers = {
-    horizon: HORIZONS,
-    goal: GOALS,
-    dropReaction: DROP_REACTIONS,
-    incomeStability: INCOME_STABILITY,
-  };
-  for (const [question, values] of Object.entries(answers)) {
-    for (const value of values) keys.push(`risk.answers.${question}.${value}`);
-  }
-
   it.each([...new Set(keys)])('%s exists in both languages', (key) => {
     expect(typeof lookup(en, key)).toBe('string');
     expect(typeof lookup(zhHans, key)).toBe('string');

@@ -377,7 +377,6 @@ function addDemoHistory(today: LocalDate, home: CurrencyCode): string[] {
       home,
       fx
     ),
-    risk: null,
   });
   const { netWorth, liabilities } = plan.netWorth;
   const firstOfMonth = `${today.slice(0, 7)}-01`;
