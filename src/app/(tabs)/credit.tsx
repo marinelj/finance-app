@@ -17,6 +17,7 @@ import { CardDeck } from '@/features/credit/CardDeck';
 import { productTypeLabel } from '@/features/credit/labels';
 import { ProductCard } from '@/features/credit/ProductCard';
 import { ProductRow } from '@/features/credit/ProductRow';
+import { orderByNextStatement } from '@/features/credit/statementOrder';
 import { haptics } from '@/lib/haptics';
 import { useCreditData } from '@/state/creditData';
 import { usePreferences } from '@/state/preferences';
@@ -31,6 +32,7 @@ export default function CreditScreen() {
   const { statuses, summary, customTypes, today } = useCreditData();
   const home = prefs.homeCurrency;
   const active = statuses.filter((status) => status.product.isActive);
+  const byStatement = orderByNextStatement(statuses, today);
 
   const openProduct = (id: string) => router.push({ pathname: '/product/[id]', params: { id } });
   const add = () => {
@@ -120,7 +122,6 @@ export default function CreditScreen() {
             renderCard={(status) => (
               <ProductCard
                 name={status.product.name}
-                issuer={status.product.issuer}
                 typeLabel={productTypeLabel(status.product, customTypes, t)}
                 emoji={status.product.emoji}
                 color={status.product.color}
@@ -141,8 +142,8 @@ export default function CreditScreen() {
 
       <Appear index={2}>
         <Card style={styles.list}>
-          <SectionHeader title={t('credit.byDueDate')} />
-          {statuses.map((status, index) => (
+          <SectionHeader title={t('credit.byStatement')} />
+          {byStatement.map(({ status, statementDays, graceDays }, index) => (
             <View key={status.product.id}>
               {index > 0 ? <View style={styles.separator} /> : null}
               <ProductRow
@@ -150,6 +151,8 @@ export default function CreditScreen() {
                 due={status.due}
                 typeLabel={productTypeLabel(status.product, customTypes, t)}
                 today={today}
+                statementDays={statementDays}
+                graceDays={graceDays}
                 onPress={() => openProduct(status.product.id)}
               />
             </View>

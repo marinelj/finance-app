@@ -19,20 +19,43 @@ type ProductRowProps = {
   due: DueInfo | null;
   typeLabel: string;
   today: string;
+  /** Days from today to the next statement, for products with a billing cycle. */
+  statementDays?: number | null;
+  /** Interest-free days for a purchase made today. */
+  graceDays?: number | null;
   onPress: () => void;
 };
 
-/** One product in the "by due date" list: icon, name, due date, amount and countdown badge. */
-export function ProductRow({ product, due, typeLabel, today, onPress }: ProductRowProps) {
+/** One product in the credit list: icon, name, days to the next statement, grace period, amount. */
+export function ProductRow({
+  product,
+  due,
+  typeLabel,
+  today,
+  statementDays = null,
+  graceDays = null,
+  onPress,
+}: ProductRowProps) {
   const { t } = useTranslation();
   const styles = useStyles(makeStyles);
   const { prefs, language } = usePreferences();
 
-  const subtitle = !product.isActive
-    ? t('credit.closed')
-    : due
-      ? t('product.dueOn', { date: formatDate(due.dueDate, language, { today }) })
-      : t('credit.nothingDue');
+  const cycle =
+    product.isActive && statementDays != null
+      ? [
+          t('credit.statementIn', { count: statementDays }),
+          graceDays != null ? t('credit.graceDays', { count: graceDays }) : null,
+        ]
+          .filter(Boolean)
+          .join(' · ')
+      : null;
+  const subtitle =
+    cycle ??
+    (!product.isActive
+      ? t('credit.closed')
+      : due
+        ? t('product.dueOn', { date: formatDate(due.dueDate, language, { today }) })
+        : t('credit.nothingDue'));
   const amount = due ? due.amount : product.balance;
   const amountLabel = formatMoneyLabel(amount, product.currency, language, prefs.hideAmounts, t);
 
@@ -50,7 +73,7 @@ export function ProductRow({ product, due, typeLabel, today, onPress }: ProductR
           {product.name}
         </Text>
         <Text variant="caption" tone="muted" numberOfLines={1}>
-          {typeLabel} · {subtitle}
+          {cycle ? subtitle : `${typeLabel} · ${subtitle}`}
         </Text>
       </View>
       <View style={styles.trailing}>
