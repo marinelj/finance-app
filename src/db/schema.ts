@@ -1,4 +1,4 @@
-import { index, integer, real, sqliteTable, text } from 'drizzle-orm/sqlite-core';
+import { index, integer, real, sqliteTable, text, uniqueIndex } from 'drizzle-orm/sqlite-core';
 
 import {
   DUE_RULE_TYPES,
@@ -104,6 +104,36 @@ export const creditProducts = sqliteTable(
   },
   (table) => [index('credit_products_active_idx').on(table.isActive)]
 );
+
+/** Imported email bills. Only last-four card identifiers are stored. */
+export const billStatements = sqliteTable(
+  'bill_statements',
+  {
+    id: text('id').primaryKey(),
+    productId: text('product_id')
+      .notNull()
+      .references(() => creditProducts.id, { onDelete: 'cascade' }),
+    sourceMessageId: text('source_message_id').notNull(),
+    issuer: text('issuer'),
+    cardLast4: text('card_last4'),
+    statementDate: text('statement_date'),
+    dueDate: text('due_date').notNull(),
+    statementBalance: real('statement_balance').notNull(),
+    minimumPayment: real('minimum_payment'),
+    currency: currencyForBill(),
+    receivedAt: text('received_at').notNull(),
+    ...timestamps,
+  },
+  (table) => [
+    uniqueIndex('bill_statements_source_idx').on(table.sourceMessageId),
+    index('bill_statements_product_idx').on(table.productId, table.dueDate),
+  ]
+);
+
+function currencyForBill() {
+  return text('currency', { enum: CURRENCY_CODES }).notNull();
+}
+export type BillStatementRow = typeof billStatements.$inferSelect;
 
 export const installments = sqliteTable(
   'installments',

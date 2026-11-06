@@ -3,6 +3,7 @@ import { z } from 'zod';
 
 import { getDb } from './client';
 import {
+  billStatements,
   bondHoldings,
   cashAccounts,
   creditProducts,
@@ -29,6 +30,7 @@ import {
 const TABLES: [string, Table][] = [
   ['custom_product_types', customProductTypes],
   ['credit_products', creditProducts],
+  ['bill_statements', billStatements],
   ['installments', installments],
   ['payments', payments],
   ['fx_rates', fxRates],

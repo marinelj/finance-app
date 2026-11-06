@@ -142,3 +142,26 @@ The database listens on a public IP. Before real data goes in:
   `scram-sha-256`, and block other remote logins.
 - Turn on TLS (`ssl = on`) and set `DB_SSLMODE=require` in `server/.env`.
 - Firewall port 55432 to the API server's address if you can.
+
+## Email bill ingestion
+
+Set `INGEST_TOKEN` in `server/.env` to a secret generated from at least 32 random bytes. Without
+it, the ingest endpoints return 404. It authorizes only `GET /api/ingest/cards` and
+`POST /api/ingest/statements`; it cannot sign in, read `/api/me`, or use `/api/sync`.
+The two endpoints share a limit of 60 requests per hour, including rejected requests.
+
+The cards response is an explicit metadata allowlist without balances. Statement batches accept
+at most 1,000 parsed entries; never send raw email bodies or full card numbers. Invalid entries
+are reported individually. Matching uses an explicit product ID scoped to the first user, then
+bill email plus last four digits, then bill email plus issuer only when exactly one product
+matches. Product currency must match the statement. Ambiguity returns `unmatched`.
+
+A source message ID identifies one bill per user. Replays are no-ops. Newer bills are ordered by
+due date, statement date, received time, then source message ID; delayed older mail cannot
+replace the current statement figures. Only `statement_balance` and `minimum_payment` change;
+`balance` and billing-cycle days remain as entered. Changes share the sync lock and bump the
+revision once per changed batch. Logs contain status counts only.
+
+Email bill history survives older clients' snapshot uploads. Missing bill-delivery fields retain
+their server values; deleting a product still cascades its bill history. The backup payload
+format stays at version 3 because the added nullable fields and optional table are compatible.

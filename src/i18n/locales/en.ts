@@ -112,6 +112,7 @@ const en = {
     estimateA11y: 'about {{amount}}',
   },
   product: {
+    latestEmailBill: 'Latest bill from email · {{date}}',
     balance: 'Balance',
     limit: 'Limit',
     available: 'Available',

@@ -61,7 +61,8 @@ export default function ProductDetailScreen() {
     );
   }
 
-  const { product, due, utilization, available, installments, payments, customType } = data;
+  const { product, due, utilization, available, installments, payments, customType, latestBill } =
+    data;
   const typeLabel = productTypeLabel(product, customTypes, t);
   const money = (amount: number) => formatMoney(amount, product.currency, { locale: language });
   const date = (value: string, weekday = false) => formatDate(value, language, { today, weekday });
@@ -210,6 +211,24 @@ export default function ProductDetailScreen() {
         variant="secondary"
         onPress={() => edit()}
       />
+
+      {latestBill ? (
+        <Card style={styles.section}>
+          <SectionHeader
+            title={t('product.latestEmailBill', {
+              date: date(latestBill.statementDate ?? latestBill.receivedAt.slice(0, 10)),
+            })}
+          />
+          <AmountText
+            value={latestBill.statementBalance}
+            currency={latestBill.currency}
+            variant="title"
+          />
+          <Text tone="secondary">
+            {t('product.dueOn', { date: date(latestBill.dueDate, true) })}
+          </Text>
+        </Card>
+      ) : null}
 
       {!product.isActive ? (
         <Card variant="outline" padding="lg" style={styles.banner}>

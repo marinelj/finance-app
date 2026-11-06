@@ -110,6 +110,7 @@ const zhHans: Translation = {
     estimateA11y: '约 {{amount}}',
   },
   product: {
+    latestEmailBill: '最新邮件账单 · {{date}}',
     balance: '欠款',
     limit: '额度',
     available: '可用额度',

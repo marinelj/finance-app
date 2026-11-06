@@ -9,6 +9,7 @@ import {
   verifyPassword,
 } from './auth.js';
 import { transaction } from './db.js';
+import { createIngestRoutes, IngestError, isIngestAuthorization } from './ingest.js';
 import { createCodexProxy } from './codex-proxy.js';
 import {
   currentRevision,
@@ -67,11 +68,19 @@ export function createApp({ pool, config, log = console }) {
     if (!type.startsWith('application/json')) throw new HttpError(415, 'json_required');
     const chunks = [];
     let size = 0;
-    for await (const chunk of req) {
-      size += chunk.length;
-      if (size > limit) throw new HttpError(413, 'too_large');
-      chunks.push(chunk);
-    }
+    await new Promise((resolve, reject) => {
+      req.on('data', (chunk) => {
+        size += chunk.length;
+        if (size > limit) {
+          chunks.length = 0;
+          reject(new HttpError(413, 'too_large'));
+        } else {
+          chunks.push(chunk);
+        }
+      });
+      req.on('end', resolve);
+      req.on('error', reject);
+    });
     try {
       return JSON.parse(Buffer.concat(chunks).toString('utf8'));
     } catch {
@@ -96,6 +105,8 @@ export function createApp({ pool, config, log = console }) {
   }
 
   async function authenticate(req) {
+    if (isIngestAuthorization(req.headers.authorization, config.ingestToken))
+      throw new HttpError(401, 'unauthorized');
     const match = /^Bearer ([A-Za-z0-9_-]{20,})$/.exec(req.headers.authorization ?? '');
     if (!match) throw new HttpError(401, 'unauthorized');
     const { rows } = await pool.query(
@@ -112,6 +123,7 @@ export function createApp({ pool, config, log = console }) {
 
   const routes = {
     'GET /health': async () => ({ ok: true }),
+    ...createIngestRoutes({ pool, token: config.ingestToken, readJson, log }),
 
     'POST /api/auth/signup': async (req) => {
       const input = parse(credentialsSchema, await readJson(req));
@@ -263,15 +275,20 @@ export function createApp({ pool, config, log = console }) {
         send(res, 200, result);
       }
     } catch (error) {
-      if (error instanceof StaleError) {
+      if (error instanceof IngestError) {
+        send(res, error.status, { error: error.code });
+      } else if (path.startsWith('/api/ingest/')) {
+        log.error?.('bill_ingest', { failed: 1 });
+        send(res, error instanceof HttpError ? error.status : 500, {
+          error: error instanceof HttpError ? error.code : 'server_error',
+        });
+      } else if (error instanceof StaleError) {
         send(res, 409, {
           error: 'stale',
           message: 'The data on the server changed since this device last synced.',
           revision: error.revision,
         });
       } else if (error instanceof HttpError) {
-        // The rest of an oversized body is still on the socket: don't reuse the connection.
-        if (error.status === 413) res.setHeader('Connection', 'close');
         send(res, error.status, { error: error.code, message: error.message });
       } else if (error instanceof SyncError) {
         send(res, 400, { error: error.code, message: error.message });
