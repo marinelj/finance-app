@@ -173,7 +173,10 @@ export class SyncEngine<P extends Snapshot> {
     this.set({ phase: 'syncing' });
     try {
       const remote = await client.revision(account.token);
-      if ((await this.deps.readAccount())?.token !== account.token) return;
+      if ((await this.deps.readAccount())?.token !== account.token) {
+        await this.load();
+        return;
+      }
       // The user may have saved while the revision request was in flight.
       const local = this.deps.collect();
       const change = localChange(fingerprint(local), account.syncedHash);
@@ -212,7 +215,10 @@ export class SyncEngine<P extends Snapshot> {
   private async pull(account: SyncAccount, client: SyncClient) {
     const before = fingerprint(this.deps.collect());
     const payload = await client.download(account.token);
-    if ((await this.deps.readAccount())?.token !== account.token) return;
+    if ((await this.deps.readAccount())?.token !== account.token) {
+      await this.load();
+      return;
+    }
     // A network response must never overwrite a user edit made after the request began.
     if (localChange(fingerprint(this.deps.collect()), before) === 'data') {
       this.set({ phase: 'conflict' });

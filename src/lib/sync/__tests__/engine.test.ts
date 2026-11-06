@@ -82,6 +82,9 @@ function setup(options: { server?: Data | null; serverRevision?: number; device?
     get account() {
       return account;
     },
+    set account(next: SyncAccount | null) {
+      account = next;
+    },
   };
 }
 
@@ -288,3 +291,47 @@ it('preserves all edited product fields through upload, reload, and foreground c
   expect(t.device.tables.credit_products[0]).toEqual(product);
   expect(t.engine.getStatus().phase).toBe('synced');
 });
+
+it.each(['revision', 'download'] as const)(
+  'resets status after signing out during %s',
+  async (stage) => {
+    const t = setup({ server: data(3) });
+    const request = deferred<unknown>();
+    (t.client[stage] as jest.Mock).mockReturnValueOnce(request.promise);
+    const pass = t.engine.sync();
+    while (!(t.client[stage] as jest.Mock).mock.calls.length) await Promise.resolve();
+    expect(t.engine.getStatus().phase).toBe('syncing');
+    t.account = null;
+    request.resolve(stage === 'revision' ? 1 : { ...data(3), revision: 1 });
+    await pass;
+    expect(t.engine.getStatus()).toEqual({ phase: 'off', lastSyncedAt: null });
+    expect(t.device).toEqual(data(0));
+    expect(t.server.uploads).toBe(0);
+  }
+);
+
+it.each(['revision', 'download'] as const)(
+  'loads the replacement account status after switching accounts during %s',
+  async (stage) => {
+    const t = setup({ server: data(3) });
+    const request = deferred<unknown>();
+    (t.client[stage] as jest.Mock).mockReturnValueOnce(request.promise);
+    const pass = t.engine.sync();
+    while (!(t.client[stage] as jest.Mock).mock.calls.length) await Promise.resolve();
+    const replacement = {
+      ...t.account!,
+      token: 'other-account',
+      lastSyncedAt: '2026-11-01T00:00:00Z',
+    };
+    t.account = replacement;
+    request.resolve(stage === 'revision' ? 1 : { ...data(3), revision: 1 });
+    await pass;
+    expect(t.engine.getStatus()).toEqual({
+      phase: 'synced',
+      lastSyncedAt: replacement.lastSyncedAt,
+    });
+    expect(t.account).toEqual(replacement);
+    expect(t.device).toEqual(data(0));
+    expect(t.server.uploads).toBe(0);
+  }
+);
