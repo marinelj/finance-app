@@ -1,9 +1,9 @@
 import { drizzle, type ExpoSQLiteDatabase } from 'drizzle-orm/expo-sqlite';
-import { migrate } from 'drizzle-orm/expo-sqlite/migrator';
 import { openDatabaseAsync, type SQLiteDatabase } from 'expo-sqlite';
 
 import migrations from '../../drizzle/migrations';
 import * as schema from './schema';
+import { migrateDatabase } from './migrate';
 
 export const DATABASE_NAME = 'finance.db';
 
@@ -21,12 +21,17 @@ let opening: Promise<AppDatabase> | null = null;
 export function openDatabase(): Promise<AppDatabase> {
   opening ??= (async () => {
     const connection = await openDatabaseAsync(DATABASE_NAME, { enableChangeListener: true });
-    await connection.execAsync('PRAGMA foreign_keys = ON;');
-    const db = drizzle(connection, { schema });
-    await migrate(db, migrations);
-    sqlite = connection;
-    database = db;
-    return db;
+    try {
+      await connection.execAsync('PRAGMA foreign_keys = ON;');
+      await migrateDatabase(connection, migrations);
+      const db = drizzle(connection, { schema });
+      sqlite = connection;
+      database = db;
+      return db;
+    } catch (error) {
+      await connection.closeAsync().catch(() => {});
+      throw error;
+    }
   })();
   opening.catch(() => {
     opening = null;

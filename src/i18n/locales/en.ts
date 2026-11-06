@@ -149,6 +149,7 @@ const en = {
     showAll: 'Show all {{count}}',
     showLess: 'Show less',
     details: 'Details',
+    editBilling: 'Edit the billing cycle',
     type: 'Type',
     currency: 'Currency',
     statementDay: 'Statement day',

@@ -146,6 +146,7 @@ const zhHans: Translation = {
     paid: '已还',
     showAll: '显示全部 {{count}} 期',
     showLess: '收起',
+    editBilling: '修改账单周期',
     details: '详细信息',
     type: '类型',
     currency: '币种',

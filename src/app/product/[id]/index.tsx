@@ -127,6 +127,12 @@ export default function ProductDetailScreen() {
 
   const floatToday = floatForPurchase(product, today);
 
+  const edit = (section?: 'billing') =>
+    router.push({
+      pathname: '/product/[id]/edit',
+      params: { id: product.id, ...(section ? { section } : {}) },
+    });
+
   const details: [string, string][] = [
     [t('product.type'), customType ? `${typeLabel} · ${t(`kinds.${product.kind}`)}` : typeLabel],
     [t('product.currency'), product.currency],
@@ -195,6 +201,13 @@ export default function ProductDetailScreen() {
           today={today}
         />
       </Appear>
+
+      <Button
+        label={t('common.edit')}
+        icon="pencil-outline"
+        variant="secondary"
+        onPress={() => edit()}
+      />
 
       {!product.isActive ? (
         <Card variant="outline" padding="lg" style={styles.banner}>
@@ -432,16 +445,28 @@ export default function ProductDetailScreen() {
       <Appear index={block++}>
         <Card style={styles.section}>
           <SectionHeader title={t('product.details')} />
-          {details.map(([label, value]) => (
-            <View key={label} style={styles.detailRow}>
-              <Text variant="callout" tone="muted" style={styles.detailLabel}>
-                {label}
-              </Text>
-              <Text variant="callout" weight="600" style={styles.detailValue}>
-                {value}
-              </Text>
-            </View>
-          ))}
+          {details.map(([label, value]) => {
+            const billing = label === t('product.statementDay') || label === t('product.dueDay');
+            return (
+              <Pressable
+                key={label}
+                style={styles.detailRow}
+                disabled={!billing}
+                onPress={() => edit('billing')}
+                accessibilityRole={billing ? 'button' : undefined}
+                accessibilityHint={billing ? t('product.editBilling') : undefined}>
+                <Text variant="callout" tone="muted" style={styles.detailLabel}>
+                  {label}
+                </Text>
+                <Text variant="callout" weight="600" style={styles.detailValue}>
+                  {value}
+                </Text>
+                {billing ? (
+                  <Icon name="pencil-outline" size={16} color={colors.primaryText} />
+                ) : null}
+              </Pressable>
+            );
+          })}
           {floatToday ? (
             <Note
               icon="sparkles-outline"

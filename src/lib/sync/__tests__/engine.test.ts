@@ -209,3 +209,82 @@ describe('SyncEngine', () => {
     expect(t.engine.getStatus().phase).toBe('off');
   });
 });
+
+function deferred<T>() {
+  let resolve!: (value: T) => void;
+  const promise = new Promise<T>((done) => {
+    resolve = done;
+  });
+  return { promise, resolve };
+}
+
+it('keeps a card edit made while checking the server revision', async () => {
+  const t = setup({ device: data(1) });
+  await t.engine.sync();
+  const revision = deferred<number>();
+  (t.client.revision as jest.Mock).mockReturnValueOnce(revision.promise);
+  const pass = t.engine.sync();
+  await Promise.resolve();
+  t.device = {
+    ...data(1),
+    tables: {
+      ...data(1).tables,
+      credit_products: [
+        {
+          id: 'card',
+          name: 'Edited synthetic card',
+          balance: 123,
+          statementDay: 6,
+          dueDay: 24,
+          hasGracePeriod: true,
+          interestRateUnit: 'daily',
+        },
+      ],
+    },
+  };
+  revision.resolve(t.server.revision);
+  await pass;
+  expect(t.server.data).toEqual(t.device);
+});
+
+it('never overwrites an edit made while downloading a newer server snapshot', async () => {
+  const t = setup({ device: data(1) });
+  await t.engine.sync();
+  t.server.data = data(3);
+  t.server.revision++;
+  const download = deferred<Data & { revision: number }>();
+  (t.client.download as jest.Mock).mockReturnValueOnce(download.promise);
+  const pass = t.engine.sync();
+  while (!(t.client.download as jest.Mock).mock.calls.length) await Promise.resolve();
+  t.device = data(2);
+  download.resolve({ ...data(3), revision: t.server.revision });
+  await pass;
+  expect(t.device).toEqual(data(2));
+  expect(t.engine.getStatus().phase).toBe('conflict');
+});
+
+it('preserves all edited product fields through upload, reload, and foreground checks', async () => {
+  const t = setup({ device: data(1) });
+  await t.engine.sync();
+  const product = {
+    id: 'card',
+    name: 'Synthetic card',
+    balance: 100,
+    statementDay: 2,
+    dueDay: 22,
+    dueRule: 'fixed_day',
+    dueDaysAfterStatement: null,
+    hasGracePeriod: true,
+    graceNote: 'Synthetic grace rule',
+    interestRate: 12,
+    interestRateUnit: 'apr',
+  };
+  t.device = { ...data(1), tables: { ...data(1).tables, credit_products: [product] } };
+  await t.engine.sync({ checkServer: false });
+  await t.engine.load();
+  await t.engine.sync();
+  await t.engine.sync();
+  expect(t.server.data?.tables.credit_products[0]).toEqual(product);
+  expect(t.device.tables.credit_products[0]).toEqual(product);
+  expect(t.engine.getStatus().phase).toBe('synced');
+});

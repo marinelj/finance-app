@@ -1,6 +1,12 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { KeyboardAvoidingView, ScrollView, StyleSheet, View } from 'react-native';
+import {
+  KeyboardAvoidingView,
+  ScrollView,
+  StyleSheet,
+  View,
+  type ScrollViewInstance,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Appear } from '@/components/Appear';
@@ -60,6 +66,7 @@ export type ExistingProduct = {
 
 type ProductFormProps = {
   initialValues: ProductFormValues;
+  initialSection?: 'billing';
   existing?: ExistingProduct;
   typeLabel: string;
   today: LocalDate;
@@ -71,6 +78,7 @@ type DayField = 'statementDay' | 'dueDay' | 'repaymentDay';
 /** Add/edit form for every kind of credit product, with a live preview of the card. */
 export function ProductForm({
   initialValues,
+  initialSection,
   existing,
   typeLabel,
   today,
@@ -85,6 +93,16 @@ export function ProductForm({
   const { values, set, errors } = form;
   const [dayField, setDayField] = useState<DayField | null>(null);
   const [startDateOpen, setStartDateOpen] = useState(false);
+
+  const scrollRef = useRef<ScrollViewInstance>(null);
+  const [billingY, setBillingY] = useState<number | null>(null);
+  useEffect(() => {
+    if (initialSection !== 'billing' || billingY == null) return;
+    const frame = requestAnimationFrame(() =>
+      scrollRef.current?.scrollTo({ y: Math.max(0, billingY - 12), animated: false })
+    );
+    return () => cancelAnimationFrame(frame);
+  }, [initialSection, billingY]);
 
   const loan = isLoanKind(values.kind);
   const scheduled = loan && values.useSchedule;
@@ -187,6 +205,7 @@ export function ProductForm({
       keyboardVerticalOffset={process.env.EXPO_OS === 'ios' ? 64 : 0}
       style={styles.flex}>
       <ScrollView
+        ref={scrollRef}
         contentContainerStyle={styles.content}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="interactive">
@@ -346,48 +365,50 @@ export function ProductForm({
               </FormSection>
             </Appear>
 
-            <Appear index={section++}>
-              <FormSection
-                title={values.kind === 'other' ? t('form.cycleOptional') : t('form.cycle')}>
-                <SelectField
-                  label={t('form.statementDay')}
-                  value={dayValueLabel(values.statementDay, t)}
-                  placeholder={t('form.notSet')}
-                  onPress={() => setDayField('statementDay')}
-                  error={error('statementDay')}
-                />
-                <Text variant="caption" tone="muted">
-                  {t('form.dueRule')}
-                </Text>
-                <SegmentedControl
-                  accessibilityLabel={t('form.dueRule')}
-                  value={values.dueRule}
-                  onChange={(rule) => set('dueRule', rule)}
-                  options={[
-                    { value: 'fixed_day', label: t('dueRules.fixed_day') },
-                    { value: 'days_after_statement', label: t('dueRules.days_after_statement') },
-                  ]}
-                />
-                {values.dueRule === 'fixed_day' ? (
+            <View onLayout={(event) => setBillingY(event.nativeEvent.layout.y)}>
+              <Appear index={section++}>
+                <FormSection
+                  title={values.kind === 'other' ? t('form.cycleOptional') : t('form.cycle')}>
                   <SelectField
-                    label={t('form.dueDay')}
-                    value={dayValueLabel(values.dueDay, t)}
+                    label={t('form.statementDay')}
+                    value={dayValueLabel(values.statementDay, t)}
                     placeholder={t('form.notSet')}
-                    onPress={() => setDayField('dueDay')}
-                    error={error('dueDay')}
+                    onPress={() => setDayField('statementDay')}
+                    error={error('statementDay')}
                   />
-                ) : (
-                  <TextField
-                    label={t('form.dueDaysAfterStatement')}
-                    value={values.dueDaysAfterStatement}
-                    onChangeText={(text) => set('dueDaysAfterStatement', text)}
-                    keyboardType="number-pad"
-                    placeholder="25"
-                    error={error('dueDaysAfterStatement')}
+                  <Text variant="caption" tone="muted">
+                    {t('form.dueRule')}
+                  </Text>
+                  <SegmentedControl
+                    accessibilityLabel={t('form.dueRule')}
+                    value={values.dueRule}
+                    onChange={(rule) => set('dueRule', rule)}
+                    options={[
+                      { value: 'fixed_day', label: t('dueRules.fixed_day') },
+                      { value: 'days_after_statement', label: t('dueRules.days_after_statement') },
+                    ]}
                   />
-                )}
-              </FormSection>
-            </Appear>
+                  {values.dueRule === 'fixed_day' ? (
+                    <SelectField
+                      label={t('form.dueDay')}
+                      value={dayValueLabel(values.dueDay, t)}
+                      placeholder={t('form.notSet')}
+                      onPress={() => setDayField('dueDay')}
+                      error={error('dueDay')}
+                    />
+                  ) : (
+                    <TextField
+                      label={t('form.dueDaysAfterStatement')}
+                      value={values.dueDaysAfterStatement}
+                      onChangeText={(text) => set('dueDaysAfterStatement', text)}
+                      keyboardType="number-pad"
+                      placeholder="25"
+                      error={error('dueDaysAfterStatement')}
+                    />
+                  )}
+                </FormSection>
+              </Appear>
+            </View>
 
             <Appear index={section++}>
               <FormSection title={t('form.interest')}>
