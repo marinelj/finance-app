@@ -179,6 +179,20 @@ describe('SyncEngine', () => {
     expect(t.engine.getStatus().phase).toBe('synced');
   });
 
+  it('never uploads an emptied device over a server with data', async () => {
+    const t = setup({ device: data(2) });
+    await t.engine.sync();
+    t.device = data(0);
+    await t.engine.sync({ checkServer: false });
+    expect(t.engine.getStatus().phase).toBe('conflict');
+    expect(t.server.data).toEqual(data(2));
+    expect(t.server.uploads).toBe(1);
+
+    await t.engine.resolve('server');
+    expect(t.device).toEqual(data(2));
+    expect(t.engine.getStatus().phase).toBe('synced');
+  });
+
   it('keeps edits while offline and saves them when back', async () => {
     const t = setup({ device: data(1) });
     await t.engine.sync();

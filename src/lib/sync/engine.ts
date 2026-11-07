@@ -190,7 +190,12 @@ export class SyncEngine<P extends Snapshot> {
         if (isEmpty(local)) await this.pull(account, client);
         else this.set({ phase: 'conflict' });
       } else if (!serverChanged) {
-        if (change === 'none') await this.markSynced(account, account.revision, account.syncedHash);
+        // An empty device facing a server with data has almost always lost its local copy
+        // (cleared site data, a fresh browser profile). Uploading it would erase the server,
+        // which keeps no history, so ask instead.
+        if (change === 'data' && isEmpty(local)) this.set({ phase: 'conflict' });
+        else if (change === 'none')
+          await this.markSynced(account, account.revision, account.syncedHash);
         else await this.push(account, client, local, account.revision);
       } else if (change === 'data') {
         this.set({ phase: 'conflict' });
