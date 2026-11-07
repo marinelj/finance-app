@@ -354,6 +354,17 @@ export function ProductForm({
                     onPress={() => setDayField('statementDay')}
                     error={error('statementDay')}
                   />
+                  <TextField
+                    label={t('form.courtesyDays')}
+                    value={values.courtesyDays}
+                    onChangeText={(text) => set('courtesyDays', text)}
+                    keyboardType="number-pad"
+                    suffix={t('form.courtesyDaysUnit')}
+                    placeholder="0"
+                    optional
+                    hint={t('form.courtesyDaysHint')}
+                    error={error('courtesyDays')}
+                  />
                   {/* Due day is a fixed day of the month; the rule switch stays only for old data. */}
                   {values.dueRule === 'days_after_statement' ? (
                     <>

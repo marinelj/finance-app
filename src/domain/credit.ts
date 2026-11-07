@@ -33,6 +33,8 @@ export type CreditProduct = {
   issuer: string;
   billEmail?: string | null;
   cardLast4?: string | null;
+  /** Additional interest-free days; null and older records mean zero. Due dates stay unchanged. */
+  courtesyDays?: number | null;
   kind: ProductKind;
   currency: CurrencyCode;
   creditLimit: number;

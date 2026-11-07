@@ -1,3 +1,5 @@
+import migrations from '../../../drizzle/migrations';
+
 import { migrateDatabase } from '../migrate';
 
 const bundle = {
@@ -52,4 +54,17 @@ it('keeps the migration retryable when schema creation fails', async () => {
   await expect(migrateDatabase(db, bundle)).rejects.toThrow('schema failed');
   await migrateDatabase(db, bundle);
   expect(db.runAsync).toHaveBeenCalledTimes(2);
+});
+
+it('upgrades an existing schema with the bundled courtesy column once', async () => {
+  const db = connection();
+  const entries = migrations.journal.entries;
+  db.getFirstAsync.mockResolvedValueOnce({ created_at: entries[entries.length - 2].when });
+  await migrateDatabase(db, migrations);
+  expect(db.execAsync).toHaveBeenCalledWith(
+    expect.stringContaining('ADD COLUMN courtesy_days integer CHECK')
+  );
+  expect(db.runAsync).toHaveBeenCalledTimes(1);
+  await migrateDatabase(db, migrations);
+  expect(db.runAsync).toHaveBeenCalledTimes(1);
 });

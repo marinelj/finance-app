@@ -80,6 +80,7 @@ export const creditProducts = sqliteTable(
     minimumPayment: real('minimum_payment'),
 
     statementDay: integer('statement_day'),
+    courtesyDays: integer('courtesy_days'),
     dueRule: text('due_rule', { enum: DUE_RULE_TYPES }),
     dueDay: integer('due_day'),
     dueDaysAfterStatement: integer('due_days_after_statement'),

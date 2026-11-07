@@ -160,7 +160,7 @@ export async function replaceSnapshot(client, columns, userId, payload) {
   // Old clients omit newly introduced fields/tables. Preserve those values before parent
   // replacement cascades, and retain server-owned email history for products still present.
   const { rows: existingProducts } = await client.query(
-    'SELECT id, bill_email, card_last4 FROM credit_products WHERE user_id = $1',
+    'SELECT id, bill_email, card_last4, courtesy_days FROM credit_products WHERE user_id = $1',
     [userId]
   );
   const productById = new Map(existingProducts.map((row) => [row.id, row]));
@@ -170,6 +170,8 @@ export async function replaceSnapshot(client, columns, userId, payload) {
       ...row,
       billEmail: row.billEmail === undefined ? (stored?.bill_email ?? null) : row.billEmail,
       cardLast4: row.cardLast4 === undefined ? (stored?.card_last4 ?? null) : row.cardLast4,
+      courtesyDays:
+        row.courtesyDays === undefined ? (stored?.courtesy_days ?? null) : row.courtesyDays,
     };
   });
   const incomingIds = new Set(incomingProducts.map((row) => row.id));
