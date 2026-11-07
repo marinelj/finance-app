@@ -1,4 +1,16 @@
-import { BACKUP_SCHEMA, parseBackupPayload, pickColumns, RestoreError } from '../backup';
+import { getTableName, type Table } from 'drizzle-orm';
+import { getDb } from '../client';
+
+import {
+  BACKUP_SCHEMA,
+  collectBackup,
+  parseBackupPayload,
+  pickColumns,
+  restoreBackup,
+  RestoreError,
+} from '../backup';
+
+jest.mock('../client', () => ({ getDb: jest.fn() }));
 
 describe('backup payloads', () => {
   const payload = {
@@ -36,4 +48,35 @@ describe('backup payloads', () => {
       name: 'Salary',
     });
   });
+});
+
+it('collects, parses and restores courtesy days through the schema-driven backup path', () => {
+  const rows: Record<string, Record<string, unknown>[]> = {
+    credit_products: [{ id: 'synthetic', courtesyDays: 3 }],
+    settings: [],
+  };
+  const db = {
+    select: () => ({ from: (table: Table) => ({ all: () => rows[getTableName(table)] ?? [] }) }),
+    delete: (table: Table) => ({
+      run: () => {
+        rows[getTableName(table)] = [];
+      },
+    }),
+    insert: (table: Table) => ({
+      values: (values: Record<string, unknown>[]) => ({
+        run: () => {
+          rows[getTableName(table)].push(...values);
+        },
+      }),
+    }),
+    transaction: (work: (tx: unknown) => void) => work(db),
+  };
+  (getDb as jest.Mock).mockReturnValue(db);
+  const payload = parseBackupPayload(JSON.stringify(collectBackup()));
+  expect(payload.tables.credit_products[0].courtesyDays).toBe(3);
+  restoreBackup(payload);
+  expect(rows.credit_products[0].courtesyDays).toBe(3);
+  delete payload.tables.credit_products[0].courtesyDays;
+  restoreBackup(parseBackupPayload(JSON.stringify(payload)));
+  expect(rows.credit_products[0].courtesyDays ?? null).toBeNull();
 });

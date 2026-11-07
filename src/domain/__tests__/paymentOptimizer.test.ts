@@ -78,6 +78,18 @@ const wangshangdai = card({
 });
 
 describe('floatForPurchase', () => {
+  it.each([0, 3, null, undefined])(
+    'adds courtesy %s without changing the due date or its flags',
+    (courtesyDays) => {
+      const baseline = floatForPurchase(card(), '2026-10-21')!;
+      const option = floatForPurchase(card({ courtesyDays }), '2026-10-21')!;
+      expect(option.floatDays).toBe(33 + (courtesyDays ?? 0));
+      expect(option.dueDate).toBe(baseline.dueDate);
+      expect(option.statementDate).toBe(baseline.statementDate);
+      expect(option.dueFlags).toEqual(baseline.dueFlags);
+    }
+  );
+
   it('bills a purchase before the statement day on that statement', () => {
     expect(floatForPurchase(card(), '2026-10-21')).toMatchObject({
       statementDate: '2026-11-05',
@@ -309,4 +321,15 @@ describe('interestCosts', () => {
     });
     expect(cost.costOfSpend).toBe(2.1);
   });
+});
+
+it('uses the courtesy window for both rankings and the float calendar', () => {
+  const ordinary = card({ id: 'ordinary' });
+  const courteous = card({ id: 'courteous', courtesyDays: 3, creditLimit: 20000 });
+  expect(rankByFloat([ordinary, courteous], '2026-10-21').ranked[0]).toMatchObject({
+    productId: 'courteous',
+    floatDays: 36,
+  });
+  const calendar = floatCalendar([ordinary, courteous], '2026-10-21', 3);
+  expect(calendar.every((day) => day.best?.productId === 'courteous')).toBe(true);
 });

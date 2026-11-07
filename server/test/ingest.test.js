@@ -256,6 +256,33 @@ describe(
         120
       );
     });
+    it('preserves courtesy days omitted by old clients and accepts explicit zero or null', async () => {
+      const cols = await loadColumns(pool);
+      await pool.query("UPDATE credit_products SET courtesy_days = 3 WHERE id = 'a'");
+      const snapshot = await readSnapshot(pool, cols, owner);
+      expectCourtesy(snapshot, 3);
+      for (const card of snapshot.tables.credit_products) delete card.courtesyDays;
+      await transaction(pool, (client) => replaceSnapshot(client, cols, owner, snapshot));
+      expectCourtesy(await readSnapshot(pool, cols, owner), 3);
+      for (const value of [0, null, 30]) {
+        snapshot.tables.credit_products.find((card) => card.id === 'a').courtesyDays = value;
+        await transaction(pool, (client) => replaceSnapshot(client, cols, owner, snapshot));
+        expectCourtesy(await readSnapshot(pool, cols, owner), value);
+      }
+      for (const invalid of [-1, 31]) {
+        await assert.rejects(
+          () =>
+            pool.query("UPDATE credit_products SET courtesy_days = $1 WHERE id = 'a'", [invalid]),
+          { code: '23514' }
+        );
+      }
+      function expectCourtesy(payload, value) {
+        assert.equal(
+          payload.tables.credit_products.find((card) => card.id === 'a').courtesyDays,
+          value
+        );
+      }
+    });
     it('syncs bill history and preserves it plus omitted delivery fields for an old client', async () => {
       const cols = await loadColumns(pool);
       const snapshot = await readSnapshot(pool, cols, owner);

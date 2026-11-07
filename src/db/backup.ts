@@ -111,7 +111,7 @@ export function parseBackupPayload(text: string): BackupPayload {
   return result.data;
 }
 
-/** Keeps only the keys that are columns of the table (older or newer backups may differ). */
+/** Filters to schema columns, including nullable courtesyDays, so old backups remain compatible. */
 export function pickColumns(
   row: Record<string, unknown>,
   columns: readonly string[]

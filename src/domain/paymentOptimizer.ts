@@ -12,7 +12,7 @@ import { roundMoney, type CurrencyCode } from './money';
  * A purchase on a card (or 花呗-style BNPL) with an interest-free grace period is billed on the
  * statement that closes on or after the purchase date; purchases after the statement day roll
  * into the next cycle. The interest-free float is the number of days from the purchase to that
- * statement's due date.
+ * statement's due date plus the card's courtesy window; the due date itself stays unchanged.
  *
  * Loans such as 借呗 and 网商贷 charge daily interest from the day you borrow, so they are never
  * ranked here; `interestCosts` shows what they actually cost instead.
@@ -34,7 +34,7 @@ export type FloatOption = {
   purchaseDate: LocalDate;
   statementDate: LocalDate;
   dueDate: LocalDate;
-  /** Interest-free days: due date minus purchase date. */
+  /** Interest-free days: due date minus purchase date plus the courtesy window. */
   floatDays: number;
   /** Weekend or bank holiday on the due date. Flagged only; the due date is never moved. */
   dueFlags: DateFlags;
@@ -88,7 +88,7 @@ export function floatForPurchase(
     purchaseDate: date,
     statementDate,
     dueDate,
-    floatDays: daysBetween(date, dueDate),
+    floatDays: daysBetween(date, dueDate) + (product.courtesyDays ?? 0),
     dueFlags: dateFlags(dueDate, product.currency),
     available,
     spendInCurrency,

@@ -46,6 +46,7 @@ export type ProductFormValues = {
   statementBalance: string;
   minimumPayment: string;
   statementDay: number | null;
+  courtesyDays: string;
   dueRule: DueRuleType;
   dueDay: number | null;
   dueDaysAfterStatement: string;
@@ -126,6 +127,7 @@ export function defaultFormValues(options: {
     statementBalance: '',
     minimumPayment: '',
     statementDay: preset.statementDay ?? null,
+    courtesyDays: '',
     dueRule: preset.dueRule ?? 'fixed_day',
     dueDay: preset.dueDay ?? null,
     dueDaysAfterStatement: toInputText(preset.dueDaysAfterStatement),
@@ -182,6 +184,7 @@ export function formValuesFromProduct(
     statementBalance: money(product.statementBalance),
     minimumPayment: money(product.minimumPayment),
     statementDay: product.statementDay,
+    courtesyDays: toInputText(product.courtesyDays),
     dueRule: product.dueRule ?? 'fixed_day',
     dueDay: product.dueDay,
     dueDaysAfterStatement: toInputText(product.dueDaysAfterStatement),
@@ -220,6 +223,7 @@ const shape = z.object({
   statementBalance: z.string(),
   minimumPayment: z.string(),
   statementDay: dayOfMonth,
+  courtesyDays: z.string(),
   dueRule: z.enum(DUE_RULE_TYPES),
   dueDay: dayOfMonth,
   dueDaysAfterStatement: z.string(),
@@ -295,6 +299,12 @@ export const productFormSchema = shape.superRefine((values, ctx) => {
         }
       }
     }
+  }
+
+  const courtesy = parseInteger(values.courtesyDays);
+  if (courtesy != null) {
+    if (Number.isNaN(courtesy)) fail('courtesyDays', 'wholeNumber');
+    else if (courtesy < 0 || courtesy > 30) fail('courtesyDays', 'courtesyRange');
   }
 
   const rate = parseDecimal(values.interestRate);
@@ -415,6 +425,7 @@ export function toProductFields(
     statementBalance: loan ? null : money(number(values.statementBalance)),
     minimumPayment: scheduled ? null : money(number(values.minimumPayment)),
     statementDay: cycleSet ? values.statementDay : null,
+    courtesyDays: parseInteger(values.courtesyDays) ?? 0,
     dueRule: cycleSet ? values.dueRule : null,
     dueDay: fixedDay ? values.dueDay : null,
     dueDaysAfterStatement: daysAfter ? parseInteger(values.dueDaysAfterStatement) : null,

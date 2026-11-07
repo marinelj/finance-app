@@ -366,3 +366,30 @@ it('normalizes bill delivery fields and rejects complete card numbers', () => {
     cardLast4: 'last4',
   });
 });
+
+it.each(['', '0', '3', '30'])(
+  'stores an optional whole courtesy window %s and restores it in the form',
+  (input) => {
+    const values = cardForm({ courtesyDays: input });
+    expect(validateProductForm(values)).toEqual({});
+    const fields = toProductFields(values, today).fields;
+    expect(fields.courtesyDays).toBe(input === '' ? 0 : Number(input));
+    expect(formValuesFromProduct(fields, false, today).courtesyDays).toBe(
+      String(fields.courtesyDays)
+    );
+    expect(
+      formValuesFromProduct({ ...fields, courtesyDays: null }, false, today).courtesyDays
+    ).toBe('');
+    expect(
+      formValuesFromProduct({ ...fields, courtesyDays: undefined }, false, today).courtesyDays
+    ).toBe('');
+  }
+);
+it.each([
+  ['-1', 'courtesyRange'],
+  ['31', 'courtesyRange'],
+  ['1.5', 'wholeNumber'],
+  ['abc', 'wholeNumber'],
+])('rejects invalid courtesy window %s', (courtesyDays, error) => {
+  expect(validateProductForm(cardForm({ courtesyDays }))).toMatchObject({ courtesyDays: error });
+});

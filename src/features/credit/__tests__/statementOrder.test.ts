@@ -44,3 +44,13 @@ it('puts the longest wait until the next statement first, cycle-less products la
   expect(rows[0].graceDays).toBeGreaterThan(rows[1].graceDays!);
   expect(rows[2]).toMatchObject({ statementDays: null, graceDays: null });
 });
+
+it('uses courtesy days for the grace-period display and statement-date tie-break', () => {
+  const rows = orderByNextStatement(
+    [card('ordinary'), card('courteous', { courtesyDays: 3 })],
+    '2026-11-06'
+  );
+  expect(rows.map((row) => row.status.product.id)).toEqual(['courteous', 'ordinary']);
+  expect(rows[0].statementDays).toBe(rows[1].statementDays);
+  expect(rows[0].graceDays).toBe(rows[1].graceDays! + 3);
+});

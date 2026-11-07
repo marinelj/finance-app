@@ -206,7 +206,8 @@ describe('API', { skip: !url && 'TEST_DATABASE_URL is not set' }, () => {
     assert.deepEqual(got.body.settings, sent.settings);
     for (const [table, rows] of Object.entries(sent.tables)) {
       const back = got.body.tables[table].map((row) => {
-        const { cardLast4, billEmail, ...rest } = row;
+        const { cardLast4, billEmail, courtesyDays, ...rest } = row;
+        assert.equal(courtesyDays ?? null, null);
         assert.equal(billEmail ?? null, null);
         assert.equal(cardLast4 ?? null, null);
         return rest;
