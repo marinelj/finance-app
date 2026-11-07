@@ -365,26 +365,22 @@ export function ProductForm({
                     hint={t('form.courtesyDaysHint')}
                     error={error('courtesyDays')}
                   />
-                  {/* Due day is a fixed day of the month; the rule switch stays only for old data. */}
-                  {values.dueRule === 'days_after_statement' ? (
-                    <>
-                      <Text variant="caption" tone="muted">
-                        {t('form.dueRule')}
-                      </Text>
-                      <SegmentedControl
-                        accessibilityLabel={t('form.dueRule')}
-                        value={values.dueRule}
-                        onChange={(rule) => set('dueRule', rule)}
-                        options={[
-                          { value: 'fixed_day', label: t('dueRules.fixed_day') },
-                          {
-                            value: 'days_after_statement',
-                            label: t('dueRules.days_after_statement'),
-                          },
-                        ]}
-                      />
-                    </>
-                  ) : null}
+                  {/* Due date: a fixed day of the month, or a number of days after the statement. */}
+                  <Text variant="caption" tone="muted">
+                    {t('form.dueRule')}
+                  </Text>
+                  <SegmentedControl
+                    accessibilityLabel={t('form.dueRule')}
+                    value={values.dueRule}
+                    onChange={(rule) => set('dueRule', rule)}
+                    options={[
+                      { value: 'fixed_day', label: t('dueRules.fixed_day') },
+                      {
+                        value: 'days_after_statement',
+                        label: t('dueRules.days_after_statement'),
+                      },
+                    ]}
+                  />
                   {values.dueRule === 'fixed_day' ? (
                     <SelectField
                       label={t('form.dueDay')}
