@@ -1,4 +1,4 @@
-import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
+import { Stack, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Pressable, StyleSheet, View } from 'react-native';
@@ -31,6 +31,7 @@ import { ProductForm } from '@/features/credit/ProductForm';
 import { formValuesFromProduct } from '@/domain/productForm';
 import { confirm } from '@/lib/confirm';
 import { formatDate } from '@/lib/format';
+import { useGoBack } from '@/lib/goBack';
 import { haptics } from '@/lib/haptics';
 import { useCreditData, useProduct } from '@/state/creditData';
 import { usePreferences } from '@/state/preferences';
@@ -40,7 +41,7 @@ const INSTALLMENTS_PREVIEW = 3;
 
 export default function ProductDetailScreen() {
   const { t } = useTranslation();
-  const router = useRouter();
+  const goBack = useGoBack('/credit');
   const toast = useToast();
   const { colors } = useTheme();
   const styles = useStyles(makeStyles);
@@ -105,7 +106,7 @@ export default function ProductDetailScreen() {
     });
     if (!ok) return;
     haptics.warning();
-    router.back();
+    goBack();
     deleteProduct(product.id);
   };
 

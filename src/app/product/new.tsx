@@ -1,8 +1,9 @@
-import { Stack, useRouter } from 'expo-router';
+import { Stack } from 'expo-router';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { HeaderButton } from '@/components/HeaderButton';
+import { useGoBack } from '@/lib/goBack';
 import { Screen } from '@/components/Screen';
 import type { CustomProductType } from '@/db/schema';
 import type { PresetKey } from '@/domain/credit';
@@ -20,13 +21,13 @@ type Choice = { preset: PresetKey } | { customType: CustomProductType };
 /** Add a product: pick a type, then fill in the form. */
 export default function NewProductScreen() {
   const { t } = useTranslation();
-  const router = useRouter();
+  const goBack = useGoBack('/');
   const toast = useToast();
   const { prefs } = usePreferences();
   const { customTypes, products, today } = useCreditData();
   const [choice, setChoice] = useState<Choice | null>(null);
 
-  const close = () => router.back();
+  const close = () => goBack();
 
   if (!choice) {
     return (
@@ -79,7 +80,7 @@ export default function NewProductScreen() {
         onSaved={() => {
           const first = products.length === 0;
           toast({ message: t('form.saved'), aboveTabBar: true });
-          router.back();
+          goBack();
           // Ask for notification permission once there is something to remind about.
           if (first && prefs.reminders.enabled) {
             void requestNotificationPermission(t('reminders.channel')).then(
