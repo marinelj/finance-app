@@ -8,6 +8,10 @@ import { StyleSheet } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
+import { StackBackButton } from '@/components/StackBackButton';
+import { BackNavigationProvider } from '@/lib/BackNavigationProvider';
+import { backFallback } from '@/lib/goBack';
+
 import { ThemeProvider, useTheme } from '@/design/theme';
 import { NotificationResponder, ReminderSync } from '@/features/credit/ReminderSync';
 import { ServerSync } from '@/state/serverSync';
@@ -20,6 +24,8 @@ import { PlanProvider } from '@/state/plan';
 import { PreferencesProvider } from '@/state/preferences';
 import { ToastProvider } from '@/state/toast';
 import { WealthDataProvider } from '@/state/wealthData';
+
+export const unstable_settings = { initialRouteName: '(tabs)' };
 
 // The splash screen stays up until the database is open (see DatabaseGate).
 SplashScreen.preventAutoHideAsync().catch(() => {
@@ -45,32 +51,39 @@ function Navigation() {
 
   return (
     <NavigationThemeProvider value={navigationTheme}>
-      <StatusBar style="dark" />
-      <Stack
-        screenOptions={{
-          headerShadowVisible: false,
-          headerTintColor: colors.primaryText,
-          headerTitleStyle: { color: colors.text },
-          headerStyle: { backgroundColor: colors.background },
-          headerBackButtonDisplayMode: 'minimal',
-          contentStyle: { backgroundColor: colors.background },
-        }}>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="product/new" options={{ presentation: 'modal' }} />
-        <Stack.Screen name="product/[id]/index" options={{ title: '' }} />
-        <Stack.Screen name="optimizer" options={{ title: t('optimizer.title') }} />
-        <Stack.Screen name="plan" options={{ title: t('plan.title') }} />
-        <Stack.Screen name="wealth/[kind]/index" options={{ title: '' }} />
-        <Stack.Screen name="wealth/[kind]/edit" options={{ presentation: 'modal' }} />
-        <Stack.Screen name="settings/fx" options={{ title: t('fx.title') }} />
-        <Stack.Screen name="settings/types" options={{ title: t('settings.productTypes') }} />
-        <Stack.Screen name="settings/backup" options={{ title: t('backup.title') }} />
-        <Stack.Screen name="settings/sync" options={{ title: t('sync.title') }} />
-        <Stack.Screen name="design-system" options={{ title: t('settings.designSystem') }} />
-      </Stack>
-      <ReminderSync />
-      <ServerSync />
-      {notificationsSupported ? <NotificationResponder /> : null}
+      <BackNavigationProvider>
+        <StatusBar style="dark" />
+        <Stack
+          screenOptions={({ route }) => ({
+            headerBackVisible: false,
+            headerLeft:
+              route.name === '(tabs)'
+                ? undefined
+                : () => <StackBackButton fallback={backFallback(route.name)} />,
+            headerShadowVisible: false,
+            headerTintColor: colors.primaryText,
+            headerTitleStyle: { color: colors.text },
+            headerStyle: { backgroundColor: colors.background },
+            headerBackButtonDisplayMode: 'minimal',
+            contentStyle: { backgroundColor: colors.background },
+          })}>
+          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          <Stack.Screen name="product/new" options={{ presentation: 'modal' }} />
+          <Stack.Screen name="product/[id]/index" options={{ title: '' }} />
+          <Stack.Screen name="optimizer" options={{ title: t('optimizer.title') }} />
+          <Stack.Screen name="plan" options={{ title: t('plan.title') }} />
+          <Stack.Screen name="wealth/[kind]/index" options={{ title: '' }} />
+          <Stack.Screen name="wealth/[kind]/edit" options={{ presentation: 'modal' }} />
+          <Stack.Screen name="settings/fx" options={{ title: t('fx.title') }} />
+          <Stack.Screen name="settings/types" options={{ title: t('settings.productTypes') }} />
+          <Stack.Screen name="settings/backup" options={{ title: t('backup.title') }} />
+          <Stack.Screen name="settings/sync" options={{ title: t('sync.title') }} />
+          <Stack.Screen name="design-system" options={{ title: t('settings.designSystem') }} />
+        </Stack>
+        <ReminderSync />
+        <ServerSync />
+        {notificationsSupported ? <NotificationResponder /> : null}
+      </BackNavigationProvider>
     </NavigationThemeProvider>
   );
 }

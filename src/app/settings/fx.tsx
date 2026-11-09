@@ -1,4 +1,3 @@
-import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { KeyboardAvoidingView, ScrollView, StyleSheet, View } from 'react-native';
@@ -14,6 +13,7 @@ import { resetFxTable, saveFxTable } from '@/db/fx';
 import { rate, withRateToHome, type FxTable } from '@/domain/fx';
 import { CURRENCIES, CURRENCY_CODES, roundTo, type CurrencyCode } from '@/domain/money';
 import { parseDecimal, toInputText } from '@/domain/numberInput';
+import { useGoBack } from '@/lib/goBack';
 import { haptics } from '@/lib/haptics';
 import { useCreditData } from '@/state/creditData';
 import { usePreferences } from '@/state/preferences';
@@ -23,7 +23,7 @@ import { CONTENT_MAX_WIDTH, useCenteredGutter } from '@/lib/platform';
 /** Hand-entered exchange rates, shown as "1 USD in CNY" against the home currency. */
 export default function ExchangeRatesScreen() {
   const { t } = useTranslation();
-  const router = useRouter();
+  const goBack = useGoBack('/settings');
   const toast = useToast();
   const styles = useStyles(makeStyles);
   const insets = useSafeAreaInsets();
@@ -62,7 +62,7 @@ export default function ExchangeRatesScreen() {
     saveFxTable(table);
     haptics.success();
     toast({ message: t('form.saved') });
-    router.back();
+    goBack();
   };
 
   return (
@@ -97,7 +97,7 @@ export default function ExchangeRatesScreen() {
             resetFxTable();
             haptics.success();
             toast({ message: t('fx.resetDone') });
-            router.back();
+            goBack();
           }}
           style={styles.center}
         />

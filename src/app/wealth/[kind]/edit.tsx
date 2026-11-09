@@ -1,4 +1,4 @@
-import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
+import { Stack, useLocalSearchParams } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 
 import { EmptyState } from '@/components/EmptyState';
@@ -10,6 +10,7 @@ import { itemName } from '@/features/wealth/describe';
 import { tKey } from '@/features/wealth/meta';
 import { WealthForm } from '@/features/wealth/WealthForm';
 import { confirm } from '@/lib/confirm';
+import { useGoBack } from '@/lib/goBack';
 import { haptics } from '@/lib/haptics';
 import { useCreditData } from '@/state/creditData';
 import { usePreferences } from '@/state/preferences';
@@ -19,7 +20,7 @@ import { rowsOf, useWealthData } from '@/state/wealthData';
 /** Add or edit one portfolio item. */
 export default function WealthItemScreen() {
   const { t } = useTranslation();
-  const router = useRouter();
+  const goBack = useGoBack('/wealth');
   const toast = useToast();
   const { kind, id } = useLocalSearchParams<{ kind: string; id?: string }>();
   const data = useWealthData();
@@ -30,7 +31,7 @@ export default function WealthItemScreen() {
     <Stack.Screen
       options={{
         title,
-        headerLeft: () => <HeaderButton label={t('common.cancel')} onPress={() => router.back()} />,
+        headerLeft: () => <HeaderButton label={t('common.cancel')} onPress={() => goBack()} />,
       }}
     />
   );
@@ -60,7 +61,7 @@ export default function WealthItemScreen() {
         });
         if (!ok) return;
         haptics.warning();
-        router.back();
+        goBack();
         deleteWealthItem(kind, row.id);
       }
     : undefined;
@@ -75,7 +76,7 @@ export default function WealthItemScreen() {
         today={today}
         onSaved={() => {
           toast({ message: t('form.saved') });
-          router.back();
+          goBack();
         }}
         onDelete={remove ? () => void remove() : undefined}
       />

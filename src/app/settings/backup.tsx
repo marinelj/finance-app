@@ -1,5 +1,4 @@
 import { getRandomBytes } from 'expo-crypto';
-import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { StyleSheet, View } from 'react-native';
@@ -24,6 +23,7 @@ import {
 } from '@/lib/backup/files';
 import { confirm } from '@/lib/confirm';
 import { formatDate } from '@/lib/format';
+import { useGoBack } from '@/lib/goBack';
 import { haptics } from '@/lib/haptics';
 import { usePreferences, reloadPreferences } from '@/state/preferences';
 import { useToast } from '@/state/toast';
@@ -35,7 +35,7 @@ type Busy = { kind: 'encrypt' | 'decrypt'; progress: number } | null;
 /** Encrypted export to a file the user keeps, and restore from such a file. */
 export default function BackupScreen() {
   const { t } = useTranslation();
-  const router = useRouter();
+  const goBack = useGoBack('/settings');
   const toast = useToast();
   const { colors } = useTheme();
   const styles = useStyles(makeStyles);
@@ -122,8 +122,7 @@ export default function BackupScreen() {
       setBusy(null);
       haptics.success();
       toast({ message: t('backup.restored', { count }) });
-      if (router.canGoBack()) router.back();
-      else router.replace('/');
+      goBack();
     } catch (error) {
       setBusy(null);
       haptics.error();
